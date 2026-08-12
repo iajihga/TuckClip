@@ -115,7 +115,7 @@ jobs:
         run: |
           $output = Join-Path $env:RUNNER_TEMP "TuckClip-$env:RUNTIME_ID"
           ./windows/scripts/Build-Installer.ps1 `
-            -Tag v0.0.0-ci `
+            -Tag v0.0.1-ci `
             -Runtime $env:RUNTIME_ID `
             -OutputDirectory $output `
             -NoRestore
