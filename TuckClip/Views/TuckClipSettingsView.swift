@@ -6,15 +6,18 @@ struct TuckClipSettingsView: View {
     @ObservedObject var panelViewModel: ClipboardPanelViewModel
 
     var body: some View {
-        TabView {
+        TabView(selection: $settings.selectedSettingsTab) {
             RecordingSettingsPane(settings: settings)
                 .tabItem { Label(settings.localized("记录"), systemImage: "doc.on.clipboard") }
+                .tag(TuckClipSettingsTab.recording)
 
             PrivacySettingsPane(settings: settings)
                 .tabItem { Label(settings.localized("隐私"), systemImage: "hand.raised") }
+                .tag(TuckClipSettingsTab.privacy)
 
             StorageSettingsPane(settings: settings, panelViewModel: panelViewModel)
                 .tabItem { Label(settings.localized("存储"), systemImage: "internaldrive") }
+                .tag(TuckClipSettingsTab.storage)
         }
         .tint(TuckClipTheme.indigo)
         .frame(width: 640, height: 440)
@@ -136,6 +139,38 @@ private struct PrivacySettingsPane: View {
 
     var body: some View {
         Form {
+            if !settings.isAccessibilityTrusted {
+                Section {
+                    Label {
+                        VStack(alignment: .leading, spacing: 5) {
+                            Text(settings.localized("启用选择后自动粘贴"))
+                                .font(.callout.weight(.semibold))
+                            Text(settings.localized("1. 点击“请求权限”，让 macOS 登记 TuckClip。"))
+                            Text(settings.localized("2. 打开辅助功能设置，并开启 TuckClip。"))
+                            Text(settings.localized("3. 返回 TuckClip；授权状态会自动刷新。"))
+                        }
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    } icon: {
+                        Image(systemName: "hand.raised.fill")
+                            .foregroundStyle(TuckClipTheme.indigo)
+                    }
+
+                    HStack {
+                        Button(settings.localized("请求权限")) {
+                            settings.requestAccessibilityAccess()
+                        }
+                        .buttonStyle(.borderedProminent)
+
+                        Button(settings.localized("打开辅助功能设置")) {
+                            settings.openAccessibilitySettings()
+                        }
+                    }
+                } header: {
+                    Text(settings.localized("首次设置"))
+                }
+            }
+
             Section(settings.localized("访问状态")) {
                 HStack(alignment: .center, spacing: 12) {
                     StatusRow(
@@ -167,13 +202,13 @@ private struct PrivacySettingsPane: View {
 
                     Spacer()
 
-                    if !settings.isAccessibilityTrusted {
-                        Button(settings.localized("请求权限")) {
-                            settings.requestAccessibilityAccess()
-                        }
-                    } else {
+                    if settings.isAccessibilityTrusted {
                         Button(settings.localized("刷新")) {
                             settings.refreshAccessibilityStatus()
+                        }
+                    } else {
+                        Button(settings.localized("打开辅助功能设置")) {
+                            settings.openAccessibilitySettings()
                         }
                     }
                 }

@@ -133,8 +133,8 @@ final class TuckClipAppCoordinator {
         uiSettings.recordingEnabled.toggle()
     }
 
-    func showSettings() {
-        settingsPresenter.show()
+    func showSettings(tab: TuckClipSettingsTab? = nil) {
+        settingsPresenter.show(tab: tab)
     }
 
     @discardableResult

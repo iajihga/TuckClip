@@ -4,6 +4,7 @@ import Combine
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private static let hasLaunchedBeforeKey = "TuckClip.hasLaunchedBefore"
+    private static let hasShownPermissionsGuideKey = "TuckClip.hasShownPermissionsGuide.v1"
     private static let automaticTerminationReason = "TuckClip 正在记录剪贴板历史"
 
     lazy var coordinator: TuckClipAppCoordinator = {
@@ -51,16 +52,41 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             UserDefaults.standard.set(true, forKey: Self.hasLaunchedBeforeKey)
         }
 
+        coordinator.uiSettings.refreshAccessibilityStatus()
+        let hasShownPermissionsGuide = UserDefaults.standard.bool(
+            forKey: Self.hasShownPermissionsGuideKey
+        )
+        let shouldShowPermissionsGuide = Self.shouldShowPermissionsGuide(
+            automaticPasteEnabled: coordinator.uiSettings.automaticPasteEnabled,
+            isAccessibilityTrusted: coordinator.uiSettings.isAccessibilityTrusted,
+            hasShownPermissionsGuide: hasShownPermissionsGuide
+        )
+        if shouldShowPermissionsGuide {
+            UserDefaults.standard.set(true, forKey: Self.hasShownPermissionsGuideKey)
+        }
+
 #if DEBUG
         let shouldShowInitialPanel = true
 #else
         let shouldShowInitialPanel = isFirstLaunch
 #endif
-        if shouldShowInitialPanel {
+        if shouldShowPermissionsGuide {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { [weak self] in
+                self?.coordinator.showSettings(tab: .privacy)
+            }
+        } else if shouldShowInitialPanel {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { [weak self] in
                 self?.coordinator.togglePanel()
             }
         }
+    }
+
+    nonisolated static func shouldShowPermissionsGuide(
+        automaticPasteEnabled: Bool,
+        isAccessibilityTrusted: Bool,
+        hasShownPermissionsGuide: Bool
+    ) -> Bool {
+        automaticPasteEnabled && !isAccessibilityTrusted && !hasShownPermissionsGuide
     }
 
     func applicationWillTerminate(_ notification: Notification) {

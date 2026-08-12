@@ -9,7 +9,7 @@ public sealed class WindowsUpdateClientTests
     public void UpdateSourceIsTheOfficialHttpsRepository()
     {
         Assert.AreEqual(
-            "https://github.com/iajihga/TuckClip",
+            "https://github.com/mzopedia/TuckClip",
             VelopackUpdateClient.RepositoryUrl);
     }
 

@@ -25,7 +25,10 @@ final class SettingsWindowPresenter: NSObject, NSWindowDelegate {
             .store(in: &cancellables)
     }
 
-    func show() {
+    func show(tab: TuckClipSettingsTab? = nil) {
+        if let tab {
+            settings.selectedSettingsTab = tab
+        }
         let controller = windowController ?? makeWindowController()
         windowController = controller
         controller.showWindow(nil)

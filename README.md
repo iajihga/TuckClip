@@ -2,9 +2,9 @@
 
 English · [简体中文](README.zh-CN.md)
 
-[![CI](https://github.com/iajihga/TuckClip/actions/workflows/ci.yml/badge.svg)](https://github.com/iajihga/TuckClip/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/github/v/release/iajihga/TuckClip?display_name=tag)](https://github.com/iajihga/TuckClip/releases)
-[![License](https://img.shields.io/github/license/iajihga/TuckClip)](LICENSE)
+[![CI](https://github.com/mzopedia/TuckClip/actions/workflows/ci.yml/badge.svg)](https://github.com/mzopedia/TuckClip/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/mzopedia/TuckClip?display_name=tag)](https://github.com/mzopedia/TuckClip/releases)
+[![License](https://img.shields.io/github/license/mzopedia/TuckClip)](LICENSE)
 
 TuckClip is a free, open-source clipboard history manager for macOS and Windows. It keeps copied text, links, images, and files on your device so you can search, organize, and paste them again whenever you need them.
 
@@ -24,7 +24,7 @@ TuckClip is a free, open-source clipboard history manager for macOS and Windows.
 
 ## Download TuckClip
 
-Download the latest version from [GitHub Releases](https://github.com/iajihga/TuckClip/releases/latest):
+Download the latest version from [GitHub Releases](https://github.com/mzopedia/TuckClip/releases/latest):
 
 | Platform | Recommended download |
 |---|---|
@@ -36,6 +36,26 @@ Download the latest version from [GitHub Releases](https://github.com/iajihga/Tu
 Portable Windows ZIPs are also available. Installed builds check GitHub Releases for stable updates and ask before downloading and restarting. Portable ZIPs remain manually updatable. Every release includes `SHA256SUMS.txt` for file verification.
 
 > Release builds are currently unsigned, so macOS or Windows may ask you to confirm the first launch. Download TuckClip only from this repository and verify the checksum.
+
+### First launch on macOS
+
+TuckClip is not yet notarized by Apple. macOS may block the first launch even when the downloaded file matches the published checksum. Do not disable Gatekeeper and do not run random Terminal commands. Instead:
+
+1. Drag `TuckClip.app` from the DMG to **Applications**, then try to open it once.
+2. If macOS blocks it or offers to move it to the Trash, open **System Settings → Privacy & Security**, scroll to **Security**, and select **Open Anyway** for TuckClip. Confirm the next macOS prompt.
+
+![Open TuckClip from macOS Privacy & Security](docs/images/macos-open-anyway.png)
+
+Automatic paste needs a separate Accessibility permission. On first successful launch, TuckClip opens its **Privacy** settings with a guided setup. Select **Request Permission**, then **Open Accessibility Settings**, turn on TuckClip, and return to the app. Without this permission, selecting an item still copies it safely; press `⌘V` yourself.
+
+![Enable TuckClip in macOS Accessibility settings](docs/images/macos-accessibility-en.png)
+
+Overriding this protection carries risk because Apple has not checked the app. Only follow these steps if you intentionally downloaded TuckClip from `github.com/mzopedia/TuckClip` and the checksum matches. The **Open Anyway** option is available for about an hour after a blocked launch attempt. [Read Apple's guidance](https://support.apple.com/guide/mac-help/open-a-mac-app-from-an-unknown-developer-mh40616/mac).
+
+```bash
+cd ~/Downloads
+shasum -a 256 --ignore-missing -c TuckClip-v*-SHA256SUMS.txt
+```
 
 ## Quick start
 
@@ -64,7 +84,7 @@ Clipboard history can contain sensitive information. Pause capture before copyin
 - macOS 14 or later
 - Windows 11; Windows 10 22H2 is available on a best-effort basis
 
-Automatic paste on macOS requires Accessibility permission. Without it, TuckClip still places the selected item on the clipboard for manual paste. Manual paste may also be necessary when the target Windows app is running as administrator.
+Automatic paste on macOS requires Accessibility permission. See [First launch on macOS](#first-launch-on-macos). Manual paste may also be necessary when the target Windows app is running as administrator.
 
 ## Frequently asked questions
 

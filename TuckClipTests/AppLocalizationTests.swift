@@ -26,6 +26,37 @@ final class AppLocalizationTests: XCTestCase {
         XCTAssertEqual(AppLanguage.english.resolved(preferredLanguages: ["zh-CN"]), .english)
     }
 
+    func testPermissionsGuideAppearsOnlyOnceWhenAutomaticPasteNeedsAccess() {
+        XCTAssertTrue(AppDelegate.shouldShowPermissionsGuide(
+            automaticPasteEnabled: true,
+            isAccessibilityTrusted: false,
+            hasShownPermissionsGuide: false
+        ))
+        XCTAssertFalse(AppDelegate.shouldShowPermissionsGuide(
+            automaticPasteEnabled: false,
+            isAccessibilityTrusted: false,
+            hasShownPermissionsGuide: false
+        ))
+        XCTAssertFalse(AppDelegate.shouldShowPermissionsGuide(
+            automaticPasteEnabled: true,
+            isAccessibilityTrusted: true,
+            hasShownPermissionsGuide: false
+        ))
+        XCTAssertFalse(AppDelegate.shouldShowPermissionsGuide(
+            automaticPasteEnabled: true,
+            isAccessibilityTrusted: false,
+            hasShownPermissionsGuide: true
+        ))
+    }
+
+    func testPermissionsGuideEnglishCopyIsComplete() {
+        XCTAssertEqual(L10n.text("首次设置", language: .english), "First-time setup")
+        XCTAssertEqual(
+            L10n.text("打开辅助功能设置", language: .english),
+            "Open Accessibility Settings"
+        )
+    }
+
     func testLanguagePersistsAndSynchronizesWithoutResettingOtherSettings() throws {
         let suiteName = "TuckClipLanguageSettingsTests.\(UUID().uuidString)"
         let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))

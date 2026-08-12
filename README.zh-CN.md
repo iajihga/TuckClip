@@ -2,9 +2,9 @@
 
 [English](README.md) · 简体中文
 
-[![CI](https://github.com/iajihga/TuckClip/actions/workflows/ci.yml/badge.svg)](https://github.com/iajihga/TuckClip/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/github/v/release/iajihga/TuckClip?display_name=tag)](https://github.com/iajihga/TuckClip/releases)
-[![License](https://img.shields.io/github/license/iajihga/TuckClip)](LICENSE)
+[![CI](https://github.com/mzopedia/TuckClip/actions/workflows/ci.yml/badge.svg)](https://github.com/mzopedia/TuckClip/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/mzopedia/TuckClip?display_name=tag)](https://github.com/mzopedia/TuckClip/releases)
+[![License](https://img.shields.io/github/license/mzopedia/TuckClip)](LICENSE)
 
 TuckClip 是一款免费、开源的 macOS 与 Windows 剪贴板历史工具。它会在本机保存复制过的文本、链接、图片和文件，方便你随时搜索、整理并再次粘贴。
 
@@ -24,7 +24,7 @@ TuckClip 是一款免费、开源的 macOS 与 Windows 剪贴板历史工具。�
 
 ## 下载 TuckClip
 
-前往 [GitHub Releases](https://github.com/iajihga/TuckClip/releases/latest) 下载最新版：
+前往 [GitHub Releases](https://github.com/mzopedia/TuckClip/releases/latest) 下载最新版：
 
 | 平台 | 推荐文件 |
 |---|---|
@@ -36,6 +36,26 @@ TuckClip 是一款免费、开源的 macOS 与 Windows 剪贴板历史工具。�
 Windows 还提供免安装的 ZIP。安装版会从 GitHub Releases 检查稳定更新，并在下载和重启前征求你的确认；免安装 ZIP 仍需手动更新。每个版本都附带 `SHA256SUMS.txt`，可用于核对文件。
 
 > 当前公开构建尚未签名，因此 macOS 或 Windows 首次启动时可能要求你确认。请只从本仓库下载 TuckClip，并核对校验值。
+
+### macOS 首次打开
+
+TuckClip 目前尚未通过 Apple 公证。即使下载文件与发布的校验值一致，macOS 也可能拦截首次启动。请不要关闭 Gatekeeper，也不要执行来源不明的终端命令。正确操作是：
+
+1. 先把 `TuckClip.app` 从 DMG 拖入“**应用程序**”，再尝试打开一次。
+2. 如果 macOS 阻止打开或提示移到废纸篓，进入“**系统设置 → 隐私与安全性**”，滚动到“**安全性**”，找到 TuckClip 后点击“**仍要打开**”，再确认一次系统提示。
+
+![在 macOS 隐私与安全性中允许打开 TuckClip](docs/images/macos-open-anyway.png)
+
+选择记录后自动粘贴还需要单独的辅助功能权限。第一次成功启动时，TuckClip 会直接显示“隐私”设置和操作步骤。点击“**请求权限**”，再点击“**打开辅助功能设置**”，开启 TuckClip 后返回应用即可。未授权时，选择记录仍会安全地复制到剪贴板，你可以手动按 `⌘V`。
+
+![在 macOS 辅助功能设置中开启 TuckClip](docs/images/macos-accessibility-zh.png)
+
+绕过这项保护存在风险，因为 Apple 尚未检查这个应用。只有当你主动从 `github.com/mzopedia/TuckClip` 下载 TuckClip，并且校验值一致时，才应执行这些操作。“仍要打开”通常只会在尝试启动后保留约一小时。详见 [Apple 官方说明](https://support.apple.com/zh-cn/guide/mac-help/mh40616/mac)。
+
+```bash
+cd ~/Downloads
+shasum -a 256 --ignore-missing -c TuckClip-v*-SHA256SUMS.txt
+```
 
 ## 快速开始
 
@@ -64,7 +84,7 @@ TuckClip 会把剪贴板历史保存在当前用户的本机目录：
 - macOS 14 或更高版本
 - Windows 11；Windows 10 22H2 为尽力兼容
 
-macOS 自动粘贴需要辅助功能权限。未授权时，TuckClip 仍会把选中的内容放回剪贴板，你可以手动粘贴。目标 Windows 应用以管理员身份运行时，也可能需要手动粘贴。
+macOS 自动粘贴需要辅助功能权限，详见“[macOS 首次打开](#macos-首次打开)”。目标 Windows 应用以管理员身份运行时，也可能需要手动粘贴。
 
 ## 常见问题
 
