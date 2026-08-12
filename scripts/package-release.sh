@@ -72,6 +72,8 @@ xcodebuild \
   -configuration Release \
   -destination "generic/platform=macOS" \
   -derivedDataPath "${DERIVED_DATA_PATH}" \
+  -clonedSourcePackagesDirPath "${PROJECT_DIR}/.build/SourcePackages" \
+  -onlyUsePackageVersionsFromResolvedFile \
   ARCHS="${ARCHITECTURE}" \
   ONLY_ACTIVE_ARCH=NO \
   MARKETING_VERSION="${BUNDLE_VERSION}" \

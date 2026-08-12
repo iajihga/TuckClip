@@ -30,7 +30,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var storageWarningMenuItem: NSMenuItem?
     private var clearMenuItem: NSMenuItem?
     private var settingsMenuItem: NSMenuItem?
+    private var checkForUpdatesMenuItem: NSMenuItem?
     private var quitMenuItem: NSMenuItem?
+    private let updateController = MacUpdateController()
     private var cancellables: Set<AnyCancellable> = []
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -40,6 +42,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         ProcessInfo.processInfo.disableSuddenTermination()
         NSApp.setActivationPolicy(.accessory)
         installStatusItem()
+        updateController.start()
         coordinator.startRuntime()
         observeStatus()
 
@@ -100,6 +103,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     @objc private func retryHotKey(_ sender: Any?) {
         coordinator.registerHotKey()
         updateStatusPresentation()
+    }
+
+    @objc private func checkForUpdates(_ sender: Any?) {
+        updateController.checkForUpdates(sender)
     }
 
     @objc private func quit(_ sender: Any?) {
@@ -182,6 +189,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         settingsItem.target = self
         menu.addItem(settingsItem)
         settingsMenuItem = settingsItem
+
+        let checkForUpdatesItem = NSMenuItem(
+            title: "检查更新…",
+            action: #selector(checkForUpdates(_:)),
+            keyEquivalent: ""
+        )
+        checkForUpdatesItem.target = self
+        menu.addItem(checkForUpdatesItem)
+        checkForUpdatesMenuItem = checkForUpdatesItem
 
         menu.addItem(.separator())
 
@@ -293,6 +309,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         retryHotKeyMenuItem?.title = localized("重新注册快捷键")
         clearMenuItem?.title = localized("清除未置顶历史…")
         settingsMenuItem?.title = localized("设置…")
+        checkForUpdatesMenuItem?.title = localized("检查更新…")
+        checkForUpdatesMenuItem?.isEnabled = updateController.canCheckForUpdates
         quitMenuItem?.title = localized("退出 TuckClip")
 
         if let error = settings.hotKeyErrorDescription {

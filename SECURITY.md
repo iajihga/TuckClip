@@ -19,7 +19,7 @@
 
 ## 数据与信任边界
 
-TuckClip 处理的历史可能包含密码、令牌、文件路径、图片和私人文本。应用自身是 local-only：没有账号、遥测、远程 API、云同步或更新检查，不主动上传剪贴板内容。
+TuckClip 处理的历史可能包含密码、令牌、文件路径、图片和私人文本。剪贴板历史是 local-only：没有账号、遥测或云同步，也不会被 TuckClip 上传。安装版会访问本项目的 GitHub Releases，仅用于检查和下载更新；更新请求不包含剪贴板内容。
 
 这不意味着内容永远不会离开设备。当前系统剪贴板、Apple 通用剪贴板、Windows 云剪贴板、系统备份、目标应用、杀毒软件和第三方同步工具都有独立的数据规则，不属于 TuckClip 的控制边界。
 
@@ -49,7 +49,9 @@ TuckClip 处理的历史可能包含密码、令牌、文件路径、图片和�
 当前自动化发布状态：
 
 - macOS DMG 使用 ad-hoc 签名，没有 Developer ID 身份或 Apple 公证。
-- Windows portable ZIP 和 Inno Setup 安装器没有 Authenticode 签名，可能触发 Microsoft Defender SmartScreen。
+- macOS 应用内更新使用 Sparkle Ed25519 签名验证归档，并按 CPU 架构读取独立的稳定版 appcast。
+- Windows portable ZIP 和 Velopack 安装器没有 Authenticode 签名，可能触发 Microsoft Defender SmartScreen。
+- Windows 安装版通过 Velopack 校验并应用与其 package ID、架构和 channel 匹配的完整更新包；portable ZIP 不会执行应用内更新。
 - 每个版本提供统一 SHA-256 文件；校验值只能证明下载文件与发布者列出的字节一致，不能替代源码审阅、身份签名或恶意软件分析。
 
 Gatekeeper 或 SmartScreen 拦截未签名构建本身不是漏洞。以下情况属于安全问题：发布说明错误声称已签名/公证、校验值不匹配、同 tag 资产被替换，或工作流把错误架构包装成另一个文件名。

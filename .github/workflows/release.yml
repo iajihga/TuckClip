@@ -82,14 +82,31 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Build ad-hoc signed DMG
-        run: ./scripts/package-release.sh "${GITHUB_REF_NAME}" "${{ matrix.architecture }}"
+      - name: Build ad-hoc signed DMG and signed Sparkle feed
+        env:
+          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
+        run: |
+          if [[ -z "${SPARKLE_PRIVATE_KEY}" ]]; then
+            echo "SPARKLE_PRIVATE_KEY is not configured." >&2
+            exit 1
+          fi
+          key_file="$(mktemp)"
+          trap 'rm -f -- "${key_file}"' EXIT
+          print -rn -- "${SPARKLE_PRIVATE_KEY}" > "${key_file}"
+          chmod 0600 "${key_file}"
+          ./scripts/package-release.sh "${GITHUB_REF_NAME}" "${{ matrix.architecture }}"
+          SPARKLE_PRIVATE_KEY_FILE="${key_file}" \
+            ./scripts/generate-sparkle-appcast.sh \
+              "${GITHUB_REF_NAME}" \
+              "${{ matrix.architecture }}"
 
       - name: Upload packaged DMG
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: TuckClip-${{ github.ref_name }}-macOS-${{ matrix.architecture }}
-          path: dist/TuckClip-${{ github.ref_name }}-macOS-${{ matrix.architecture }}.dmg
+          path: |
+            dist/TuckClip-${{ github.ref_name }}-macOS-${{ matrix.architecture }}.dmg
+            dist/TuckClip-macOS-${{ matrix.architecture }}-appcast.xml
           if-no-files-found: error
           overwrite: false
           retention-days: 7
@@ -105,8 +122,10 @@ jobs:
         include:
           - runtime: win-x64
             architecture: x64
+            package_id: io.github.iajihga.TuckClip.WinX64
           - runtime: win-arm64
             architecture: arm64
+            package_id: io.github.iajihga.TuckClip.WinArm64
 
     steps:
       - name: Check out repository
@@ -125,7 +144,7 @@ jobs:
         shell: pwsh
         run: dotnet restore ./windows/TuckClip.Windows.slnx --locked-mode
 
-      - name: Build portable ZIP and Inno Setup installer
+      - name: Build portable ZIP and Velopack installer/feed
         shell: pwsh
         env:
           RELEASE_TAG: ${{ github.ref_name }}
@@ -143,6 +162,8 @@ jobs:
           path: |
             dist/TuckClip-${{ github.ref_name }}-Windows-${{ matrix.architecture }}-portable.zip
             dist/TuckClip-${{ github.ref_name }}-Windows-${{ matrix.architecture }}-Setup.exe
+            dist/${{ matrix.package_id }}-*-full.nupkg
+            dist/releases.${{ matrix.runtime }}.json
           if-no-files-found: error
           overwrite: false
           retention-days: 7
@@ -178,16 +199,22 @@ jobs:
           assets=(
             "TuckClip-${GITHUB_REF_NAME}-macOS-arm64.dmg"
             "TuckClip-${GITHUB_REF_NAME}-macOS-x86_64.dmg"
+            "TuckClip-macOS-arm64-appcast.xml"
+            "TuckClip-macOS-x86_64-appcast.xml"
             "TuckClip-${GITHUB_REF_NAME}-Windows-x64-portable.zip"
             "TuckClip-${GITHUB_REF_NAME}-Windows-arm64-portable.zip"
             "TuckClip-${GITHUB_REF_NAME}-Windows-x64-Setup.exe"
             "TuckClip-${GITHUB_REF_NAME}-Windows-arm64-Setup.exe"
+            "io.github.iajihga.TuckClip.WinX64-${GITHUB_REF_NAME#v}-full.nupkg"
+            "io.github.iajihga.TuckClip.WinArm64-${GITHUB_REF_NAME#v}-full.nupkg"
+            "releases.win-x64.json"
+            "releases.win-arm64.json"
           )
           for asset in "${assets[@]}"; do
             test -s "dist/${asset}"
           done
           test -s "dist/TuckClip-${GITHUB_REF_NAME}-SHA256SUMS.txt"
-          test "$(find dist -maxdepth 1 -type f -name "TuckClip-${GITHUB_REF_NAME}-*" | wc -l | tr -d ' ')" -eq 7
+          test "$(find dist -maxdepth 1 -type f | wc -l | tr -d ' ')" -eq 13
           (cd dist && sha256sum --check "TuckClip-${GITHUB_REF_NAME}-SHA256SUMS.txt")
 
       - name: Create GitHub Release without replacing assets
@@ -197,10 +224,16 @@ jobs:
           assets=(
             "dist/TuckClip-${GITHUB_REF_NAME}-macOS-arm64.dmg"
             "dist/TuckClip-${GITHUB_REF_NAME}-macOS-x86_64.dmg"
+            "dist/TuckClip-macOS-arm64-appcast.xml"
+            "dist/TuckClip-macOS-x86_64-appcast.xml"
             "dist/TuckClip-${GITHUB_REF_NAME}-Windows-x64-portable.zip"
             "dist/TuckClip-${GITHUB_REF_NAME}-Windows-arm64-portable.zip"
             "dist/TuckClip-${GITHUB_REF_NAME}-Windows-x64-Setup.exe"
             "dist/TuckClip-${GITHUB_REF_NAME}-Windows-arm64-Setup.exe"
+            "dist/io.github.iajihga.TuckClip.WinX64-${GITHUB_REF_NAME#v}-full.nupkg"
+            "dist/io.github.iajihga.TuckClip.WinArm64-${GITHUB_REF_NAME#v}-full.nupkg"
+            "dist/releases.win-x64.json"
+            "dist/releases.win-arm64.json"
             "dist/TuckClip-${GITHUB_REF_NAME}-SHA256SUMS.txt"
           )
 
@@ -214,7 +247,7 @@ jobs:
             release_flags+=(--prerelease)
           fi
 
-          notes="TuckClip ${GITHUB_REF_NAME} is available for macOS and Windows. See the repository README for installation and usage instructions. Every download can be verified with the included SHA-256 checksum file."
+          notes="TuckClip ${GITHUB_REF_NAME} is available for macOS and Windows. Installed editions can check for future updates automatically; portable Windows builds remain manually updatable. See the repository README for installation and usage instructions. Every download can be verified with the included SHA-256 checksum file."
           gh release create "${GITHUB_REF_NAME}" "${assets[@]}" \
             --verify-tag \
             --generate-notes \

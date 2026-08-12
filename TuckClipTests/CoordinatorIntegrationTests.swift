@@ -243,6 +243,39 @@ final class CoordinatorIntegrationTests: XCTestCase {
         XCTAssertEqual(viewModel.selectedItem?.id, second.id)
     }
 
+    func testPreparingPanelSelectsNewestVisibleItemForEveryPresentation() {
+        let viewModel = ClipboardPanelViewModel()
+        let newest = ClipDisplayItem(
+            id: UUID(),
+            kind: .text,
+            title: "最新一条",
+            sourceName: "测试",
+            capturedAt: .now,
+            isPinned: false
+        )
+        let older = ClipDisplayItem(
+            id: UUID(),
+            kind: .text,
+            title: "较早一条",
+            sourceName: "测试",
+            capturedAt: .now.addingTimeInterval(-1),
+            isPinned: false
+        )
+        viewModel.replaceItems([newest, older])
+        viewModel.select(older.id)
+        let previousGeneration = viewModel.presentationGeneration
+
+        viewModel.prepareForPresentation()
+
+        XCTAssertEqual(viewModel.selectedID, newest.id)
+        XCTAssertEqual(viewModel.presentationGeneration, previousGeneration + 1)
+
+        // A new generation is still emitted when the newest item is already
+        // selected, so the view can reset a stale horizontal scroll offset.
+        viewModel.prepareForPresentation()
+        XCTAssertEqual(viewModel.presentationGeneration, previousGeneration + 2)
+    }
+
     func testPasteTargetSnapshotDoesNotChangeWhenPanelTargetChanges() throws {
         let candidates = NSWorkspace.shared.runningApplications.filter {
             $0.processIdentifier != ProcessInfo.processInfo.processIdentifier

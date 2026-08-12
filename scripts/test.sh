@@ -31,6 +31,8 @@ xcodebuild \
   -configuration Debug \
   -destination "platform=macOS,arch=${HOST_ARCHITECTURE}" \
   -derivedDataPath "${DERIVED_DATA_PATH}" \
+  -clonedSourcePackagesDirPath "${PROJECT_DIR}/.build/SourcePackages" \
+  -onlyUsePackageVersionsFromResolvedFile \
   -resultBundlePath "${RESULT_BUNDLE_PATH}" \
   CODE_SIGN_IDENTITY=- \
   CODE_SIGN_STYLE=Manual \

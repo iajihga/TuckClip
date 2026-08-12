@@ -36,10 +36,16 @@ fi
 assets=(
   "TuckClip-${release_tag}-macOS-arm64.dmg"
   "TuckClip-${release_tag}-macOS-x86_64.dmg"
+  "TuckClip-macOS-arm64-appcast.xml"
+  "TuckClip-macOS-x86_64-appcast.xml"
   "TuckClip-${release_tag}-Windows-x64-portable.zip"
   "TuckClip-${release_tag}-Windows-arm64-portable.zip"
   "TuckClip-${release_tag}-Windows-x64-Setup.exe"
   "TuckClip-${release_tag}-Windows-arm64-Setup.exe"
+  "io.github.iajihga.TuckClip.WinX64-${release_tag#v}-full.nupkg"
+  "io.github.iajihga.TuckClip.WinArm64-${release_tag#v}-full.nupkg"
+  "releases.win-x64.json"
+  "releases.win-arm64.json"
 )
 
 for asset in "${assets[@]}"; do
@@ -63,7 +69,16 @@ while IFS= read -r -d '' candidate; do
   if [[ "${expected}" == "false" ]]; then
     unexpected_assets+=("${candidate_name}")
   fi
-done < <(find "${output_dir}" -maxdepth 1 -type f -name "TuckClip-${release_tag}-*" -print0)
+done < <(
+  find "${output_dir}" -maxdepth 1 -type f \
+    \( \
+      -name "TuckClip-${release_tag}-*" -o \
+      -name 'TuckClip-macOS-*-appcast.xml' -o \
+      -name "io.github.iajihga.TuckClip.Win*-${release_tag#v}-full.nupkg" -o \
+      -name 'releases.win-*.json' \
+    \) \
+    -print0
+)
 
 if (( ${#unexpected_assets[@]} != 0 )); then
   printf 'Unexpected release assets for %s:\n' "${release_tag}" >&2

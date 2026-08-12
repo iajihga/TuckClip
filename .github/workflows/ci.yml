@@ -108,13 +108,13 @@ jobs:
         shell: pwsh
         run: dotnet restore ./windows/TuckClip.Windows.slnx --locked-mode
 
-      - name: Publish self-contained portable package and validate PE
+      - name: Build portable and installed packages, then validate PE
         shell: pwsh
         env:
           RUNTIME_ID: ${{ matrix.runtime }}
         run: |
           $output = Join-Path $env:RUNNER_TEMP "TuckClip-$env:RUNTIME_ID"
-          ./windows/scripts/Publish-Portable.ps1 `
+          ./windows/scripts/Build-Installer.ps1 `
             -Tag v0.0.0-ci `
             -Runtime $env:RUNTIME_ID `
             -OutputDirectory $output `
