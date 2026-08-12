@@ -112,20 +112,20 @@ Pull request 请写清问题、改动范围、测试命令、实机环境、结�
 macOS 单架构 DMG：
 
 ```bash
-./scripts/package-release.sh v0.1.0 arm64 ./dist-local
-./scripts/package-release.sh v0.1.0 x86_64 ./dist-local
+./scripts/package-release.sh vX.Y.Z arm64 ./dist-local
+./scripts/package-release.sh vX.Y.Z x86_64 ./dist-local
 ```
 
 Windows portable 与安装器：
 
 ```powershell
 .\windows\scripts\Build-Installer.ps1 `
-    -Tag v0.1.0 `
+    -Tag vX.Y.Z `
     -Runtime win-x64 `
     -OutputDirectory .\dist-local
 
 .\windows\scripts\Build-Installer.ps1 `
-    -Tag v0.1.0 `
+    -Tag vX.Y.Z `
     -Runtime win-arm64 `
     -OutputDirectory .\dist-local
 ```

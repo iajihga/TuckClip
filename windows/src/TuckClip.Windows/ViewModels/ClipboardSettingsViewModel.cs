@@ -1,4 +1,5 @@
 using TuckClip.Platform.Windows.Interop;
+using TuckClip.Windows.Services;
 
 namespace TuckClip.Windows.ViewModels;
 
@@ -24,6 +25,8 @@ public sealed class ClipboardSettingsViewModel : ObservableObject
     private string? _hotKeyError;
     private bool _isRecordingHotKey;
     private ClearHistoryScope? _pendingClearScope;
+    private IReadOnlyList<AppLanguageOption> _languageOptions = [];
+    private AppLanguageOption? _selectedLanguageOption;
 
     public ClipboardSettingsViewModel(IClipboardUiActions? actions = null)
     {
@@ -47,6 +50,7 @@ public sealed class ClipboardSettingsViewModel : ObservableObject
         RestoreDefaultHotKeyCommand = new RelayCommand(
             RestoreDefaultHotKey,
             () => CanRestoreDefaultHotKey);
+        RefreshLanguageOptions(AppLanguage.System);
     }
 
     public IReadOnlyList<int> RetentionOptions { get; }
@@ -70,6 +74,24 @@ public sealed class ClipboardSettingsViewModel : ObservableObject
     public RelayCommand CancelHotKeyRecordingCommand { get; }
 
     public RelayCommand RestoreDefaultHotKeyCommand { get; }
+
+    public IReadOnlyList<AppLanguageOption> LanguageOptions
+    {
+        get => _languageOptions;
+        private set => SetProperty(ref _languageOptions, value);
+    }
+
+    public AppLanguageOption? SelectedLanguageOption
+    {
+        get => _selectedLanguageOption;
+        set
+        {
+            if (value is not null && SetProperty(ref _selectedLanguageOption, value))
+            {
+                ApplySettings();
+            }
+        }
+    }
 
     public GlobalHotKey GlobalHotKey
     {
@@ -100,7 +122,7 @@ public sealed class ClipboardSettingsViewModel : ObservableObject
     }
 
     public string HotKeyButtonText => IsRecordingHotKey
-        ? "请按新的组合键…"
+        ? AppLocalization.Text("请按新的组合键…")
         : GlobalHotKey.DisplayText;
 
     public string? HotKeyError
@@ -122,8 +144,8 @@ public sealed class ClipboardSettingsViewModel : ObservableObject
     public bool HasNoHotKeyError => !HasHotKeyError;
 
     public string HotKeyStatusText => IsRecordingHotKey
-        ? HotKeyError ?? "按 Esc 取消；快捷键至少包含一个修饰键。"
-        : HotKeyError ?? $"当前使用 {GlobalHotKey.DisplayText}";
+        ? HotKeyError ?? AppLocalization.Text("按 Esc 取消；快捷键至少包含一个修饰键。")
+        : HotKeyError ?? AppLocalization.Format("当前使用 {0}", GlobalHotKey.DisplayText);
 
     public bool CanRestoreDefaultHotKey =>
         GlobalHotKey != TuckClip.Platform.Windows.Interop.GlobalHotKey.Default;
@@ -217,10 +239,10 @@ public sealed class ClipboardSettingsViewModel : ObservableObject
     }
 
     public string ExcludedProcessSaveStatus => _isSavingExcludedProcessNames
-        ? "正在保存排除列表…"
+        ? AppLocalization.Text("正在保存排除列表…")
         : HasPendingExcludedProcessChanges
-            ? "排除列表有尚未保存的修改"
-            : "排除列表已生效";
+            ? AppLocalization.Text("排除列表有尚未保存的修改")
+            : AppLocalization.Text("排除列表已生效");
 
     public string DataDirectory
     {
@@ -258,7 +280,8 @@ public sealed class ClipboardSettingsViewModel : ObservableObject
 
     public bool HasStorageError => !string.IsNullOrWhiteSpace(StorageError);
 
-    public string RecordingStatusText => RecordingEnabled ? "正在记录新的剪贴板内容" : "记录已暂停";
+    public string RecordingStatusText => AppLocalization.Text(
+        RecordingEnabled ? "正在记录新的剪贴板内容" : "记录已暂停");
 
     public ClearHistoryScope? PendingClearScope
     {
@@ -279,15 +302,15 @@ public sealed class ClipboardSettingsViewModel : ObservableObject
 
     public string ClearConfirmationTitle => PendingClearScope switch
     {
-        ClearHistoryScope.Unpinned => "确认清除未置顶历史？",
-        ClearHistoryScope.All => "确认清除所有本地数据？",
+        ClearHistoryScope.Unpinned => AppLocalization.Text("确认清除未置顶历史？"),
+        ClearHistoryScope.All => AppLocalization.Text("确认清除所有本地数据？"),
         _ => string.Empty,
     };
 
     public string ClearConfirmationDetail => PendingClearScope switch
     {
-        ClearHistoryScope.Unpinned => "文本、链接、图片和文件记录都会删除；置顶项会保留。",
-        ClearHistoryScope.All => "包括置顶项在内的所有历史都会永久删除，此操作不可撤销。",
+        ClearHistoryScope.Unpinned => AppLocalization.Text("文本、链接、图片和文件记录都会删除；置顶项会保留。"),
+        ClearHistoryScope.All => AppLocalization.Text("包括置顶项在内的所有历史都会永久删除，此操作不可撤销。"),
         _ => string.Empty,
     };
 
@@ -327,6 +350,7 @@ public sealed class ClipboardSettingsViewModel : ObservableObject
                 ?? TuckClip.Platform.Windows.Interop.GlobalHotKey.Default;
             HotKeyError = snapshot.HotKeyError;
             IsRecordingHotKey = false;
+            RefreshLanguageOptions(snapshot.AppLanguage);
         }
         finally
         {
@@ -340,7 +364,8 @@ public sealed class ClipboardSettingsViewModel : ObservableObject
         CapturesImages,
         RetentionDays,
         MaximumItemCount,
-        ParseExcludedProcessNames(_committedExcludedProcessNamesText));
+        ParseExcludedProcessNames(_committedExcludedProcessNamesText),
+        SelectedLanguageOption?.Value ?? AppLanguage.System);
 
     public void BeginClear(ClearHistoryScope scope)
     {
@@ -385,7 +410,9 @@ public sealed class ClipboardSettingsViewModel : ObservableObject
         }
         catch (ArgumentException exception)
         {
-            HotKeyError = exception.Message;
+            HotKeyError = exception.ParamName == nameof(GlobalHotKey.Modifiers)
+                ? AppLocalization.Text("快捷键必须包含 Ctrl、Alt、Shift 或 Win 中的至少一个修饰键。")
+                : AppLocalization.Text("快捷键还需要一个非修饰键。");
             IsRecordingHotKey = true;
             return;
         }
@@ -401,6 +428,25 @@ public sealed class ClipboardSettingsViewModel : ObservableObject
 
     private void RestoreDefaultHotKey() => CaptureHotKey(
         TuckClip.Platform.Windows.Interop.GlobalHotKey.Default);
+
+    public void RefreshLocalization(AppLanguage selectedLanguage)
+    {
+        RefreshLanguageOptions(selectedLanguage);
+        OnPropertyChanged(nameof(HotKeyButtonText));
+        OnPropertyChanged(nameof(HotKeyStatusText));
+        OnPropertyChanged(nameof(ExcludedProcessSaveStatus));
+        OnPropertyChanged(nameof(RecordingStatusText));
+        OnPropertyChanged(nameof(ClearConfirmationTitle));
+        OnPropertyChanged(nameof(ClearConfirmationDetail));
+    }
+
+    private void RefreshLanguageOptions(AppLanguage selectedLanguage)
+    {
+        var options = AppLocalization.CreateOptions();
+        LanguageOptions = options;
+        _selectedLanguageOption = options.First(option => option.Value == selectedLanguage);
+        OnPropertyChanged(nameof(SelectedLanguageOption));
+    }
 
     private void ApplyExcludedProcessNames()
     {
@@ -428,7 +474,8 @@ public sealed class ClipboardSettingsViewModel : ObservableObject
         CapturesImages,
         RetentionDays,
         MaximumItemCount,
-        excludedProcessNames);
+        excludedProcessNames,
+        SelectedLanguageOption?.Value ?? AppLanguage.System);
 
     private static string[] ParseExcludedProcessNames(string value) =>
         value.Split(['\r', '\n', ',', ';'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)

@@ -1,4 +1,5 @@
 import AppKit
+import Combine
 import SwiftUI
 
 @MainActor
@@ -6,10 +7,22 @@ final class SettingsWindowPresenter: NSObject, NSWindowDelegate {
     private var windowController: NSWindowController?
     private let settings: UISettingsStore
     private let panelViewModel: ClipboardPanelViewModel
+    private var cancellables: Set<AnyCancellable> = []
 
     init(settings: UISettingsStore, panelViewModel: ClipboardPanelViewModel) {
         self.settings = settings
         self.panelViewModel = panelViewModel
+        super.init()
+        settings.$appLanguage
+            .removeDuplicates()
+            .sink { [weak self] language in
+                guard let self else { return }
+                self.windowController?.window?.title = L10n.text(
+                    "TuckClip 设置",
+                    language: language
+                )
+            }
+            .store(in: &cancellables)
     }
 
     func show() {
@@ -28,7 +41,7 @@ final class SettingsWindowPresenter: NSObject, NSWindowDelegate {
             backing: .buffered,
             defer: false
         )
-        window.title = "TuckClip 设置"
+        window.title = settings.localized("TuckClip 设置")
         window.isReleasedWhenClosed = false
         window.delegate = self
         window.contentView = NSHostingView(

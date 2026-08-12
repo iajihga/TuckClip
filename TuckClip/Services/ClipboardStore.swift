@@ -72,7 +72,10 @@ final class ClipboardStore: ObservableObject {
             items = []
             selectedID = nil
             isReadOnlyDueToLoadFailure = true
-            persistenceErrorDescription = "无法读取剪贴板历史。为保护现有数据，TuckClip 已进入只读模式：\(error.localizedDescription)"
+            persistenceErrorDescription = L10n.format(
+                "无法读取剪贴板历史。为保护现有数据，TuckClip 已进入只读模式：%@",
+                error.localizedDescription
+            )
         }
 
         selectedID = repairedSelection(in: items, preferred: selectedID)
@@ -111,7 +114,10 @@ final class ClipboardStore: ObservableObject {
                     item.imageFileName = fileName
                     newlySavedImageFileName = fileName
                 } catch {
-                    persistenceErrorDescription = "无法保存剪贴板图片：\(error.localizedDescription)"
+                    persistenceErrorDescription = L10n.format(
+                        "无法保存剪贴板图片：%@",
+                        error.localizedDescription
+                    )
                     return nil
                 }
             }
@@ -132,7 +138,10 @@ final class ClipboardStore: ObservableObject {
             do {
                 imageFileName = try repository.saveImage(imageData)
             } catch {
-                persistenceErrorDescription = "无法保存剪贴板图片：\(error.localizedDescription)"
+                persistenceErrorDescription = L10n.format(
+                    "无法保存剪贴板图片：%@",
+                    error.localizedDescription
+                )
                 return nil
             }
         }
@@ -286,7 +295,7 @@ final class ClipboardStore: ObservableObject {
     private func canMutatePersistedHistory() -> Bool {
         guard !isReadOnlyDueToLoadFailure else {
             if persistenceErrorDescription == nil {
-                persistenceErrorDescription = "无法加载剪贴板历史，当前处于只读保护模式。"
+                persistenceErrorDescription = L10n.text("无法加载剪贴板历史，当前处于只读保护模式。")
             }
             republishCurrentItems()
             return false
@@ -379,7 +388,10 @@ final class ClipboardStore: ObservableObject {
         do {
             try repository.save(committedItems)
         } catch {
-            persistenceErrorDescription = "无法保存剪贴板历史：\(error.localizedDescription)"
+            persistenceErrorDescription = L10n.format(
+                "无法保存剪贴板历史：%@",
+                error.localizedDescription
+            )
             // The panel view model performs optimistic local edits. Re-emitting
             // the unchanged durable snapshot rolls those edits back as well.
             republishCurrentItems()
@@ -396,7 +408,10 @@ final class ClipboardStore: ObservableObject {
             // Metadata is already committed and must not be rolled back to items
             // that may reference blobs cleanup removed before encountering error.
             // A later successful commit or app launch retries orphan cleanup.
-            persistenceErrorDescription = "历史已保存，但无法清理无引用图片：\(error.localizedDescription)"
+            persistenceErrorDescription = L10n.format(
+                "历史已保存，但无法清理无引用图片：%@",
+                error.localizedDescription
+            )
         }
         return true
     }
@@ -406,8 +421,14 @@ final class ClipboardStore: ObservableObject {
         do {
             try repository.deleteImage(named: fileName)
         } catch {
-            let originalError = persistenceErrorDescription.map { "\($0)；" } ?? ""
-            persistenceErrorDescription = "\(originalError)未提交的图片无法清理：\(error.localizedDescription)"
+            let originalError = persistenceErrorDescription.map {
+                "\($0)\(L10n.text("；"))"
+            } ?? ""
+            persistenceErrorDescription = L10n.format(
+                "%@未提交的图片无法清理：%@",
+                originalError,
+                error.localizedDescription
+            )
         }
     }
 
@@ -466,7 +487,10 @@ final class ClipboardStore: ObservableObject {
             try repository.cleanupOrphanedImages(referencedBy: items)
             persistenceErrorDescription = nil
         } catch {
-            persistenceErrorDescription = "无法清理无引用图片：\(error.localizedDescription)"
+            persistenceErrorDescription = L10n.format(
+                "无法清理无引用图片：%@",
+                error.localizedDescription
+            )
         }
     }
 

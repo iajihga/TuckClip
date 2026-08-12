@@ -73,6 +73,15 @@ final class UISettingsStore: ObservableObject {
     @Published private(set) var isAccessibilityTrusted = CGPreflightPostEventAccess()
     @Published var pasteboardAccessStatus: PasteboardAccessStatus = .unavailable
     @Published private(set) var globalHotKey: GlobalHotKey
+    @Published var appLanguage: AppLanguage {
+        didSet {
+            if !isApplyingStateFromAppSettings,
+               appSettings.appLanguage != appLanguage {
+                appSettings.appLanguage = appLanguage
+            }
+            onLanguageChanged?(appLanguage)
+        }
+    }
     @Published private(set) var isRecordingHotKey = false
     @Published var hotKeyErrorDescription: String?
     @Published var storageErrorDescription: String?
@@ -86,6 +95,7 @@ final class UISettingsStore: ObservableObject {
     var onExcludedBundleIdentifiersChanged: ((Set<String>) -> Void)?
     var onRetryGlobalHotKey: (() -> Void)?
     var onGlobalHotKeyChanged: ((GlobalHotKey) -> Void)?
+    var onLanguageChanged: ((AppLanguage) -> Void)?
 
     private var exclusionCommitTask: Task<Void, Never>?
     private var hasPendingExcludedBundleIdentifierChanges = false
@@ -103,6 +113,7 @@ final class UISettingsStore: ObservableObject {
         retentionDays = appSettings.historyRetentionDays
         maximumItemCount = appSettings.maximumHistoryItems
         globalHotKey = appSettings.globalHotKey
+        appLanguage = appSettings.appLanguage
 
         let excluded = appSettings.excludedBundleIdentifiers.sorted()
         excludedBundleIdentifiersText = excluded.joined(separator: "\n")
@@ -119,19 +130,35 @@ final class UISettingsStore: ObservableObject {
         )
     }
 
+    func localized(_ source: String) -> String {
+        L10n.text(source, language: appLanguage)
+    }
+
+    func localizedFormat(_ source: String, _ arguments: CVarArg...) -> String {
+        let format = L10n.text(source, language: appLanguage)
+        let localeIdentifier = appLanguage.resolved() == .simplifiedChinese
+            ? "zh-Hans"
+            : "en"
+        return String(
+            format: format,
+            locale: Locale(identifier: localeIdentifier),
+            arguments: arguments
+        )
+    }
+
     var clipboardAccessSummary: String {
-        guard recordingEnabled else { return "可访问 · 记录已暂停" }
+        guard recordingEnabled else { return localized("可访问 · 记录已暂停") }
         switch pasteboardAccessStatus {
         case .unavailable:
-            return "可访问 · 此系统无需单独授权"
+            return localized("可访问 · 此系统无需单独授权")
         case .notDetermined:
-            return "尚未确定 · 复制后由 macOS 询问"
+            return localized("尚未确定 · 复制后由 macOS 询问")
         case .ask:
-            return "每次询问 · 建议在系统设置中始终允许"
+            return localized("每次询问 · 建议在系统设置中始终允许")
         case .alwaysAllow:
-            return "始终允许 · 正在记录"
+            return localized("始终允许 · 正在记录")
         case .alwaysDeny:
-            return "已拒绝 · 无法记录"
+            return localized("已拒绝 · 无法记录")
         }
     }
 
@@ -143,11 +170,18 @@ final class UISettingsStore: ObservableObject {
         recordingStatusTitle(for: recordingEnabled)
     }
 
-    func recordingStatusTitle(for enabled: Bool) -> String {
-        guard enabled else { return "已暂停" }
-        if isStorageReadOnly { return "存储受保护" }
-        if storageErrorDescription != nil { return "存储失败" }
-        return isPasteboardAccessReady ? "记录中" : "权限受限"
+    func recordingStatusTitle(
+        for enabled: Bool,
+        language: AppLanguage? = nil
+    ) -> String {
+        let preference = language ?? appLanguage
+        guard enabled else { return L10n.text("已暂停", language: preference) }
+        if isStorageReadOnly { return L10n.text("存储受保护", language: preference) }
+        if storageErrorDescription != nil { return L10n.text("存储失败", language: preference) }
+        return L10n.text(
+            isPasteboardAccessReady ? "记录中" : "权限受限",
+            language: preference
+        )
     }
 
     var dataDirectory: URL {
@@ -185,9 +219,9 @@ final class UISettingsStore: ObservableObject {
 
     var hotKeyStatusText: String {
         if isRecordingHotKey {
-            return hotKeyErrorDescription ?? "请按新的组合键，按 Esc 取消"
+            return hotKeyErrorDescription ?? localized("请按新的组合键，按 Esc 取消")
         }
-        return hotKeyErrorDescription ?? "\(hotKeyDisplayText) 已就绪"
+        return hotKeyErrorDescription ?? localizedFormat("%@ 已就绪", hotKeyDisplayText)
     }
 
     func beginHotKeyRecording() {
@@ -231,6 +265,7 @@ final class UISettingsStore: ObservableObject {
         synchronizeCapturesImages(appSettings.capturesImages)
         synchronizeRetentionDays(appSettings.historyRetentionDays)
         synchronizeGlobalHotKey(appSettings.globalHotKey)
+        synchronizeAppLanguage(appSettings.appLanguage)
         if !hasPendingExcludedBundleIdentifierChanges {
             let excluded = appSettings.excludedBundleIdentifiers.sorted()
             let text = excluded.joined(separator: "\n")
@@ -266,6 +301,11 @@ final class UISettingsStore: ObservableObject {
     func synchronizeMaximumItemCount(_ count: Int) {
         guard maximumItemCount != count else { return }
         applyStateFromAppSettings { maximumItemCount = count }
+    }
+
+    func synchronizeAppLanguage(_ language: AppLanguage) {
+        guard appLanguage != language else { return }
+        applyStateFromAppSettings { appLanguage = language }
     }
 
     func refreshAccessibilityStatus() {

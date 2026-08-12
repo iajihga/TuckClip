@@ -74,6 +74,9 @@ public sealed class WindowsSettingsStore
                         document.HotKeyVirtualKey.Value,
                         (HotKeyModifiers)document.HotKeyModifiers.Value)
                     : GlobalHotKey.Default,
+                AppLanguage = Enum.TryParse<AppLanguage>(document.AppLanguage, out var language)
+                    ? language
+                    : AppLanguage.System,
             }.Validate();
         }
         catch (FileNotFoundException)
@@ -116,7 +119,8 @@ public sealed class WindowsSettingsStore
             normalized.MaximumItemCount,
             normalized.ExcludedProcessNames.ToArray(),
             normalized.GlobalHotKey.VirtualKey,
-            (uint)normalized.GlobalHotKey.Modifiers);
+            (uint)normalized.GlobalHotKey.Modifiers,
+            normalized.AppLanguage.ToString());
         var contents = JsonSerializer.SerializeToUtf8Bytes(document, JsonOptions);
 
         Directory.CreateDirectory(_dataDirectory);
@@ -157,5 +161,6 @@ public sealed class WindowsSettingsStore
         int MaximumItemCount,
         string[]? ExcludedProcessNames,
         uint? HotKeyVirtualKey = null,
-        uint? HotKeyModifiers = null);
+        uint? HotKeyModifiers = null,
+        string? AppLanguage = null);
 }

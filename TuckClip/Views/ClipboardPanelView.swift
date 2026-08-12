@@ -54,12 +54,12 @@ struct ClipboardPanelView: View {
             HStack(spacing: 9) {
                 Image(systemName: "magnifyingglass")
                     .foregroundStyle(.white.opacity(0.48))
-                TextField("搜索内容或来源应用", text: $viewModel.searchText)
+                TextField(settings.localized("搜索内容或来源应用"), text: $viewModel.searchText)
                     .textFieldStyle(.plain)
                     .font(.system(size: 15, weight: .medium))
                     .foregroundStyle(.white)
                     .focused($searchIsFocused)
-                    .accessibilityLabel("搜索剪贴板历史")
+                    .accessibilityLabel(settings.localized("搜索剪贴板历史"))
                 if !viewModel.searchText.isEmpty {
                     Button {
                         viewModel.searchText = ""
@@ -68,7 +68,7 @@ struct ClipboardPanelView: View {
                     }
                     .buttonStyle(.plain)
                     .foregroundStyle(.white.opacity(0.42))
-                    .accessibilityLabel("清除搜索")
+                    .accessibilityLabel(settings.localized("清除搜索"))
                 }
             }
             .padding(.horizontal, 13)
@@ -90,7 +90,7 @@ struct ClipboardPanelView: View {
             .buttonStyle(.plain)
             .foregroundStyle(.white.opacity(0.66))
             .keyboardShortcut(.cancelAction)
-            .accessibilityLabel("关闭 TuckClip")
+            .accessibilityLabel(settings.localized("关闭 TuckClip"))
         }
         .padding(.horizontal, 20)
         .padding(.top, 18)
@@ -112,7 +112,10 @@ struct ClipboardPanelView: View {
                         .fill(captureStateColor)
                         .frame(width: 7, height: 7)
                         .shadow(
-                            color: settings.recordingStatusTitle == "记录中"
+                            color: settings.recordingEnabled
+                                && !settings.isStorageReadOnly
+                                && settings.storageErrorDescription == nil
+                                && settings.isPasteboardAccessReady
                                 ? TuckClipTheme.cyan.opacity(0.65)
                                 : .clear,
                             radius: 5
@@ -142,7 +145,7 @@ struct ClipboardPanelView: View {
                     Button {
                         viewModel.selectedFilter = filter
                     } label: {
-                        Label(filter.title, systemImage: filter.symbolName)
+                        Label(filter.title(language: settings.appLanguage), systemImage: filter.symbolName)
                             .font(.caption.weight(.semibold))
                             .padding(.horizontal, 11)
                             .padding(.vertical, 7)
@@ -208,7 +211,8 @@ struct ClipboardPanelView: View {
                                     viewModel.activate(item, asPlainText: plainText)
                                 },
                                 onTogglePin: { viewModel.togglePin(item) },
-                                onDelete: { viewModel.delete(item) }
+                                onDelete: { viewModel.delete(item) },
+                                language: settings.appLanguage
                             )
                             .id(item.id)
                         }
@@ -229,15 +233,15 @@ struct ClipboardPanelView: View {
 
     private var footer: some View {
         HStack(spacing: 14) {
-            Text("\(viewModel.filteredItems.count) 项")
+            Text(settings.localizedFormat("%d 项", viewModel.filteredItems.count))
                 .monospacedDigit()
 
             Spacer()
 
-            KeyboardHint(keys: "↑ ↓", action: "选择")
-            KeyboardHint(keys: "↩", action: "粘贴")
-            KeyboardHint(keys: "⌘↩", action: "纯文本")
-            KeyboardHint(keys: "⌘D", action: "置顶")
+            KeyboardHint(keys: "↑ ↓", action: settings.localized("选择"))
+            KeyboardHint(keys: "↩", action: settings.localized("粘贴"))
+            KeyboardHint(keys: "⌘↩", action: settings.localized("纯文本"))
+            KeyboardHint(keys: "⌘D", action: settings.localized("置顶"))
         }
         .font(.caption2)
         .foregroundStyle(.white.opacity(0.44))
@@ -280,28 +284,36 @@ struct ClipboardPanelView: View {
 
     private var emptyTitle: String {
         if settings.isStorageReadOnly {
-            return "历史已进入只读保护"
+            return settings.localized("历史已进入只读保护")
         }
         if !settings.isPasteboardAccessReady {
-            return "需要允许剪贴板访问"
+            return settings.localized("需要允许剪贴板访问")
         }
-        return viewModel.searchText.isEmpty ? "等待你的下一次复制" : "没有找到匹配内容"
+        return settings.localized(
+            viewModel.searchText.isEmpty ? "等待你的下一次复制" : "没有找到匹配内容"
+        )
     }
 
     private var emptyDetail: String {
         if settings.isStorageReadOnly {
-            return "原历史未被覆盖；请在设置的“存储”页定位文件并备份"
+            return settings.localized("原历史未被覆盖；请在设置的“存储”页定位文件并备份")
         }
         if !settings.isPasteboardAccessReady {
-            return "请在系统设置中允许后再复制"
+            return settings.localized("请在系统设置中允许后再复制")
         }
         if !viewModel.searchText.isEmpty {
-            return "试试缩短关键词或切换类型筛选"
+            return settings.localized("试试缩短关键词或切换类型筛选")
         }
         if !settings.recordingEnabled {
-            return "在设置或菜单栏中恢复记录；以后按 \(settings.hotKeyDisplayText) 或点菜单栏图标回来"
+            return settings.localizedFormat(
+                "在设置或菜单栏中恢复记录；以后按 %@ 或点菜单栏图标回来",
+                settings.hotKeyDisplayText
+            )
         }
-        return "复制文本、链接、图片或文件；以后按 \(settings.hotKeyDisplayText) 或点菜单栏图标回来"
+        return settings.localizedFormat(
+            "复制文本、链接、图片或文件；以后按 %@ 或点菜单栏图标回来",
+            settings.hotKeyDisplayText
+        )
     }
 
     private func focusSearch() {

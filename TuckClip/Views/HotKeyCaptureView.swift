@@ -51,7 +51,7 @@ struct HotKeyCaptureView: NSViewRepresentable {
             ))
         }
 
-        private static func carbonModifiers(
+        static func carbonModifiers(
             from flags: NSEvent.ModifierFlags
         ) -> UInt32 {
             var result: UInt32 = 0

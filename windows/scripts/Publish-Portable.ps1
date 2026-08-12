@@ -168,7 +168,7 @@ Get-ChildItem -LiteralPath $publishDirectory -Force | ForEach-Object {
 }
 Copy-Item -LiteralPath (Join-Path $repositoryRoot 'LICENSE') -Destination $packageDirectory
 Copy-Item -LiteralPath (Join-Path $repositoryRoot 'README.md') -Destination $packageDirectory
-Copy-Item -LiteralPath (Join-Path $repositoryRoot 'README.en.md') -Destination $packageDirectory
+Copy-Item -LiteralPath (Join-Path $repositoryRoot 'README.zh-CN.md') -Destination $packageDirectory
 
 [IO.Compression.ZipFile]::CreateFromDirectory(
     $stagingDirectory,
@@ -186,7 +186,7 @@ try {
         'TuckClip/TuckClip.exe',
         'TuckClip/LICENSE',
         'TuckClip/README.md',
-        'TuckClip/README.en.md'
+        'TuckClip/README.zh-CN.md'
     )
     foreach ($requiredEntry in $requiredArchiveEntries) {
         if (-not ($archive.Entries.FullName -contains $requiredEntry)) {

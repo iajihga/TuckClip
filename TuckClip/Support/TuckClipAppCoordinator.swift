@@ -171,6 +171,11 @@ final class TuckClipAppCoordinator {
             }
         }
 
+        uiSettings.onLanguageChanged = { [weak bridge, weak panelViewModel] _ in
+            bridge?.refresh()
+            panelViewModel?.refreshLocalization()
+        }
+
         uiSettings.onRecordingChanged = { [weak self] enabled in
             guard let self else { return }
             if !enabled {
@@ -261,6 +266,13 @@ final class TuckClipAppCoordinator {
             .removeDuplicates()
             .sink { [weak uiSettings] _ in
                 uiSettings?.synchronizeFromAppSettings()
+            }
+            .store(in: &cancellables)
+
+        appSettings.$appLanguage
+            .removeDuplicates()
+            .sink { [weak uiSettings] language in
+                uiSettings?.synchronizeAppLanguage(language)
             }
             .store(in: &cancellables)
     }

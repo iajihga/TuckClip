@@ -30,7 +30,10 @@ final class CoordinatorIntegrationTests: XCTestCase {
         XCTAssertFalse(coordinator.uiSettings.recordingEnabled)
         XCTAssertFalse(appSettings.isMonitoringEnabled)
         XCTAssertFalse(coordinator.monitor.isRunning)
-        XCTAssertEqual(coordinator.uiSettings.recordingStatusTitle, "已暂停")
+        XCTAssertEqual(
+            coordinator.uiSettings.recordingStatusTitle,
+            coordinator.uiSettings.localized("已暂停")
+        )
 
         // Also verify the values stay aligned after synchronous Combine delivery
         // and a main-actor turn, instead of the old setting being written back.
@@ -158,7 +161,7 @@ final class CoordinatorIntegrationTests: XCTestCase {
         let viewModel = ClipboardPanelViewModel()
         viewModel.showPasteResult(result)
         XCTAssertEqual(viewModel.notice?.kind, .copied)
-        XCTAssertEqual(viewModel.notice?.message, "已复制到剪贴板")
+        XCTAssertEqual(viewModel.notice?.message, L10n.text("已复制到剪贴板"))
     }
 
     func testExcludedApplicationsAutosaveWithoutBeingClobberedBySynchronization() async throws {

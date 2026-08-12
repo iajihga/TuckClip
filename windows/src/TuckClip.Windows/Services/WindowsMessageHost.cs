@@ -60,13 +60,13 @@ internal sealed class WindowsMessageHost : Window, IDisposable
 
         if (!OperatingSystem.IsWindows())
         {
-            return ["Win32 clipboard monitoring is unavailable on this operating system."];
+            return [AppLocalization.Text("Win32 剪贴板监听在当前系统上不可用。")];
         }
 
         var handle = TryGetPlatformHandle()?.Handle ?? nint.Zero;
         if (handle == 0)
         {
-            return ["TuckClip could not create its Win32 message window."];
+            return [AppLocalization.Text("TuckClip 无法创建 Win32 消息窗口。")];
         }
 
         var warnings = new List<string>();
@@ -76,7 +76,7 @@ internal sealed class WindowsMessageHost : Window, IDisposable
         }
         catch (Exception exception) when (exception is System.ComponentModel.Win32Exception or InvalidOperationException)
         {
-            warnings.Add($"Clipboard monitoring could not start: {exception.Message}");
+            warnings.Add(AppLocalization.Format("剪贴板监听未能启动：{0}", exception.Message));
         }
 
         try
@@ -91,13 +91,16 @@ internal sealed class WindowsMessageHost : Window, IDisposable
         }
         catch (Exception exception) when (exception is System.ComponentModel.Win32Exception or InvalidOperationException)
         {
-            warnings.Add($"{hotKey.DisplayText} could not be registered: {exception.Message}");
+            warnings.Add(AppLocalization.Format(
+                "{0} 注册失败：{1}",
+                hotKey.DisplayText,
+                exception.Message));
         }
 
         _showMessage = SingleInstanceGuard.GetShowMessageId();
         if (_showMessage == 0)
         {
-            warnings.Add("Requests from a second TuckClip process cannot be received.");
+            warnings.Add(AppLocalization.Text("无法接收另一个 TuckClip 进程的唤起请求。"));
         }
 
         return warnings;
@@ -107,7 +110,7 @@ internal sealed class WindowsMessageHost : Window, IDisposable
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
         return (_hotKeySwitcher ?? throw new InvalidOperationException(
-            "The global hot key service is unavailable."))
+            AppLocalization.Text("全局快捷键服务不可用。")))
             .Stage(hotKey);
     }
 

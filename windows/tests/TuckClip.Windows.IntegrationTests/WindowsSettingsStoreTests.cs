@@ -44,6 +44,7 @@ public sealed class WindowsSettingsStoreTests
         Assert.AreEqual(500, settings.MaximumItemCount);
         Assert.IsEmpty(settings.ExcludedProcessNames);
         Assert.AreEqual(GlobalHotKey.Default, settings.GlobalHotKey);
+        Assert.AreEqual(AppLanguage.System, settings.AppLanguage);
     }
 
     [TestMethod]
@@ -76,6 +77,7 @@ public sealed class WindowsSettingsStoreTests
             GlobalHotKey = new GlobalHotKey(
                 0x58,
                 HotKeyModifiers.Control | HotKeyModifiers.Shift),
+            AppLanguage = AppLanguage.English,
         };
 
         await store.SaveAsync(settings);
@@ -90,6 +92,7 @@ public sealed class WindowsSettingsStoreTests
             ExpectedExcludedProcessNames,
             loaded.ExcludedProcessNames.ToArray());
         Assert.AreEqual(settings.GlobalHotKey, loaded.GlobalHotKey);
+        Assert.AreEqual(AppLanguage.English, loaded.AppLanguage);
     }
 
     [TestMethod]
@@ -112,6 +115,30 @@ public sealed class WindowsSettingsStoreTests
         var loaded = await store.LoadAsync();
 
         Assert.AreEqual(GlobalHotKey.Default, loaded.GlobalHotKey);
+        Assert.AreEqual(AppLanguage.System, loaded.AppLanguage);
+    }
+
+    [TestMethod]
+    public async Task LoadAsyncUnknownLanguageFallsBackToSystem()
+    {
+        var store = new WindowsSettingsStore(_testDirectory);
+        const string settings = """
+            {
+              "schemaVersion": 1,
+              "recordingEnabled": true,
+              "automaticPasteEnabled": true,
+              "capturesImages": true,
+              "retentionDays": 30,
+              "maximumItemCount": 500,
+              "excludedProcessNames": [],
+              "appLanguage": "Klingon"
+            }
+            """;
+        await File.WriteAllTextAsync(store.SettingsPath, settings);
+
+        var loaded = await store.LoadAsync();
+
+        Assert.AreEqual(AppLanguage.System, loaded.AppLanguage);
     }
 
     [TestMethod]

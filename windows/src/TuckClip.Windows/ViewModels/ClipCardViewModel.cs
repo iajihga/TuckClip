@@ -1,5 +1,6 @@
 using Avalonia;
 using Avalonia.Media;
+using TuckClip.Windows.Services;
 
 namespace TuckClip.Windows.ViewModels;
 
@@ -30,6 +31,7 @@ public sealed class ClipCardViewModel : ObservableObject, IDisposable
     private bool _isSelected;
     private bool _isDisposed;
     private readonly byte[]? _encodedThumbnailData;
+    private readonly string? _sourceName;
     private int? _shortcutIndex;
 
     public ClipCardViewModel(
@@ -49,7 +51,7 @@ public sealed class ClipCardViewModel : ObservableObject, IDisposable
         Title = title ?? string.Empty;
         Detail = detail ?? string.Empty;
         SearchableContent = searchableContent ?? string.Empty;
-        SourceName = string.IsNullOrWhiteSpace(sourceName) ? "未知应用" : sourceName;
+        _sourceName = sourceName;
         SourceIdentifier = sourceIdentifier;
         CapturedAt = capturedAt;
         _isPinned = isPinned;
@@ -68,7 +70,9 @@ public sealed class ClipCardViewModel : ObservableObject, IDisposable
 
     public string SearchableContent { get; }
 
-    public string SourceName { get; }
+    public string SourceName => string.IsNullOrWhiteSpace(_sourceName)
+        ? AppLocalization.Text("未知应用")
+        : _sourceName;
 
     public string? SourceIdentifier { get; }
 
@@ -115,11 +119,11 @@ public sealed class ClipCardViewModel : ObservableObject, IDisposable
 
     public string KindTitle => Kind switch
     {
-        ClipDisplayKind.Text => "文本",
-        ClipDisplayKind.Link => "链接",
-        ClipDisplayKind.Image => "图片",
-        ClipDisplayKind.Files => "文件",
-        _ => "内容",
+        ClipDisplayKind.Text => AppLocalization.Text("文本"),
+        ClipDisplayKind.Link => AppLocalization.Text("链接"),
+        ClipDisplayKind.Image => AppLocalization.Text("图片"),
+        ClipDisplayKind.Files => AppLocalization.Text("文件"),
+        _ => AppLocalization.Text("内容"),
     };
 
     public string KindIcon => Kind switch
@@ -146,7 +150,9 @@ public sealed class ClipCardViewModel : ObservableObject, IDisposable
 
     public Thickness CardBorderThickness => IsSelected ? new Thickness(2) : new Thickness(1);
 
-    public string DisplayTitle => string.IsNullOrWhiteSpace(Title) ? "无标题内容" : Title;
+    public string DisplayTitle => string.IsNullOrWhiteSpace(Title)
+        ? AppLocalization.Text("无标题内容")
+        : Title;
 
     public bool HasDetail => !string.IsNullOrWhiteSpace(Detail);
 
@@ -160,14 +166,29 @@ public sealed class ClipCardViewModel : ObservableObject, IDisposable
 
     public string RelativeTime => FormatRelativeTime(CapturedAt, DateTimeOffset.Now);
 
-    public string PinLabel => IsPinned ? "已置顶" : "置顶";
+    public string PinLabel => AppLocalization.Text(IsPinned ? "已置顶" : "置顶");
 
     public bool HasShortcut => ShortcutIndex.HasValue;
 
     public string ShortcutText => ShortcutIndex is int index ? $"Ctrl+{index}" : string.Empty;
 
     public string AccessibilitySummary =>
-        $"{KindTitle}，{DisplayTitle}，来源 {SourceName}{(IsPinned ? "，已置顶" : string.Empty)}";
+        AppLocalization.Format(
+            "{0}，{1}，来源 {2}{3}",
+            KindTitle,
+            DisplayTitle,
+            SourceName,
+            IsPinned ? AppLocalization.Text("，已置顶") : string.Empty);
+
+    public void RefreshLocalization()
+    {
+        OnPropertyChanged(nameof(KindTitle));
+        OnPropertyChanged(nameof(DisplayTitle));
+        OnPropertyChanged(nameof(SourceName));
+        OnPropertyChanged(nameof(PinLabel));
+        OnPropertyChanged(nameof(AccessibilitySummary));
+        OnPropertyChanged(nameof(RelativeTime));
+    }
 
     public bool Matches(string query)
     {
@@ -238,22 +259,22 @@ public sealed class ClipCardViewModel : ObservableObject, IDisposable
 
         if (elapsed < TimeSpan.FromMinutes(1))
         {
-            return "刚刚";
+            return AppLocalization.Text("刚刚");
         }
 
         if (elapsed < TimeSpan.FromHours(1))
         {
-            return $"{(int)elapsed.TotalMinutes} 分钟前";
+            return AppLocalization.Format("{0} 分钟前", (int)elapsed.TotalMinutes);
         }
 
         if (elapsed < TimeSpan.FromDays(1))
         {
-            return $"{(int)elapsed.TotalHours} 小时前";
+            return AppLocalization.Format("{0} 小时前", (int)elapsed.TotalHours);
         }
 
         if (elapsed < TimeSpan.FromDays(7))
         {
-            return $"{(int)elapsed.TotalDays} 天前";
+            return AppLocalization.Format("{0} 天前", (int)elapsed.TotalDays);
         }
 
         return capturedAt.LocalDateTime.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.CurrentCulture);

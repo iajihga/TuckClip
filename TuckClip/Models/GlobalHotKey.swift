@@ -9,11 +9,11 @@ enum GlobalHotKeyValidationError: LocalizedError, Equatable {
     var errorDescription: String? {
         switch self {
         case .missingModifier:
-            return "快捷键至少需要一个修饰键"
+            return L10n.text("快捷键至少需要一个修饰键")
         case .invalidKey:
-            return "快捷键还需要一个非修饰键"
+            return L10n.text("快捷键还需要一个非修饰键")
         case .unsupportedModifiers:
-            return "快捷键包含不支持的修饰键"
+            return L10n.text("快捷键包含不支持的修饰键")
         }
     }
 }

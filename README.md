@@ -1,68 +1,89 @@
-# TuckClip
+# TuckClip — Clipboard History Manager for macOS and Windows
 
-[English](README.en.md) · 简体中文
+English · [简体中文](README.zh-CN.md)
 
 [![CI](https://github.com/iajihga/TuckClip/actions/workflows/ci.yml/badge.svg)](https://github.com/iajihga/TuckClip/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/iajihga/TuckClip?display_name=tag)](https://github.com/iajihga/TuckClip/releases)
 [![License](https://img.shields.io/github/license/iajihga/TuckClip)](LICENSE)
 
-一款简洁、本地优先的 macOS 与 Windows 剪贴板历史工具。
+TuckClip is a free, open-source clipboard history manager for macOS and Windows. It keeps copied text, links, images, and files on your device so you can search, organize, and paste them again whenever you need them.
 
-![TuckClip 使用界面](docs/images/tuckclip-overview.png)
+![TuckClip clipboard history panel on macOS and Windows](docs/images/tuckclip-overview.png)
 
-## 功能
+## Features
 
-- 保存文本、链接、图片和文件复制记录
-- 搜索、类型筛选、置顶与快速删除
-- 全局快捷键呼出，支持在设置中自定义
-- 键盘导航与选择后自动粘贴
-- 暂停记录、保留期与容量控制
-- 按应用排除不想记录的内容
-- 无账号、无遥测，历史保存在本机
+- Clipboard history for text, links, images, and files
+- Fast search, type filters, pinned items, and quick deletion
+- Customizable global shortcut: `⌥⌘V` on macOS and `Ctrl+Alt+V` on Windows by default
+- Keyboard navigation and optional automatic paste after selection
+- Capture pause, retention period, and history size controls
+- Per-app exclusions for clipboard content you do not want to save
+- Interface language that follows the system or uses English or Simplified Chinese
+- Local storage with no account, telemetry, cloud sync, or runtime network requests
 
-## 下载
+## Download TuckClip
 
-前往 [GitHub Releases](https://github.com/iajihga/TuckClip/releases) 下载适合设备的版本：
+Download the latest version from [GitHub Releases](https://github.com/iajihga/TuckClip/releases/latest):
 
-| 平台 | 推荐文件 |
+| Platform | Recommended download |
 |---|---|
-| Apple 芯片 Mac | `TuckClip-*-macOS-arm64.dmg` |
+| Apple silicon Mac | `TuckClip-*-macOS-arm64.dmg` |
 | Intel Mac | `TuckClip-*-macOS-x86_64.dmg` |
 | Windows x64 | `TuckClip-*-Windows-x64-Setup.exe` |
 | Windows ARM64 | `TuckClip-*-Windows-arm64-Setup.exe` |
 
-Windows 还提供免安装的 `portable.zip`。每个版本附带 `SHA256SUMS.txt` 校验文件。
+Portable Windows ZIPs are also available. Every release includes `SHA256SUMS.txt` for file verification.
 
-> 当前公开构建未购买商业代码签名。macOS 或 Windows 首次启动时可能显示来源提示；请只从本仓库 Releases 下载并核对校验值。
+> Release builds are currently unsigned, so macOS or Windows may ask you to confirm the first launch. Download TuckClip only from this repository and verify the checksum.
 
-## 使用
+## Quick start
 
-1. 启动 TuckClip，它会常驻菜单栏或系统托盘。
-2. 正常复制文本、链接、图片或文件。
-3. macOS 按 `⌥⌘V`，Windows 按 `Ctrl+Alt+V` 打开历史面板。
-4. 搜索或选择一条记录，按回车粘贴。
+1. Launch TuckClip. It stays available from the macOS menu bar or Windows system tray.
+2. Copy text, a link, an image, or a file as usual.
+3. Press `⌥⌘V` on macOS or `Ctrl+Alt+V` on Windows to open clipboard history.
+4. Search for an item, select it, and press Enter to paste.
 
-唤起快捷键可在“设置 → 记录 → 快捷键”中修改；新组合键如果被占用，TuckClip 会继续保留之前可用的快捷键。
+You can change the shortcut under **Settings → Capture → Shortcut**. If the new combination is already in use, TuckClip keeps the previous shortcut active.
 
-## 平台要求
+Choose **Follow System**, **English**, or **Simplified Chinese** under **Settings → Capture → Language**. The interface updates immediately.
 
-- macOS 14 或更高版本
-- Windows 11；Windows 10 22H2 尽力兼容
+## Privacy
 
-macOS 的自动粘贴需要辅助功能权限。没有权限时仍可恢复剪贴板内容并手动粘贴。Windows 中遇到管理员权限应用时也可能需要手动粘贴。
+TuckClip stores clipboard history locally for the current user:
 
-## 数据与隐私
+- macOS: `~/Library/Application Support/TuckClip/`
+- Windows: `%LOCALAPPDATA%\TuckClip`
 
-TuckClip 不包含账号、遥测、云同步或运行时网络请求。剪贴板历史保存在当前用户的本机目录：
+Clipboard history can contain sensitive information. Pause capture before copying passwords or private keys, and exclude password managers or other sensitive apps in Settings. See the [Security Policy](SECURITY.md) for more information.
 
-- macOS：`~/Library/Application Support/TuckClip/`
-- Windows：`%LOCALAPPDATA%\TuckClip`
+## System requirements
 
-剪贴板可能包含敏感信息。建议在复制密码或密钥前暂停记录，并在设置中排除密码管理器等应用。更多说明见 [安全政策](SECURITY.md)。
+- macOS 14 or later
+- Windows 11; Windows 10 22H2 is available on a best-effort basis
 
-## 从源码构建
+Automatic paste on macOS requires Accessibility permission. Without it, TuckClip still places the selected item on the clipboard for manual paste. Manual paste may also be necessary when the target Windows app is running as administrator.
 
-macOS 需要 Xcode 16.3 或更高版本：
+## Frequently asked questions
+
+### What is TuckClip?
+
+TuckClip is a cross-platform clipboard manager that gives macOS and Windows users a searchable history of recently copied text, links, images, and files.
+
+### Is TuckClip free and open source?
+
+Yes. TuckClip is free to use and released under the MIT License.
+
+### Can I change the clipboard history shortcut?
+
+Yes. The global shortcut is customizable on both macOS and Windows from TuckClip Settings.
+
+### Does TuckClip upload or sync clipboard data?
+
+No. TuckClip has no account system, telemetry, cloud sync, or runtime network requests. Clipboard history stays in the local user data directory.
+
+## Build from source
+
+macOS requires Xcode 16.3 or later:
 
 ```bash
 xcodebuild \
@@ -76,7 +97,7 @@ xcodebuild \
 ./scripts/test.sh
 ```
 
-Windows 需要仓库 `windows/global.json` 指定的 .NET 10 SDK：
+Windows requires the .NET 10 SDK selected by `windows/global.json`:
 
 ```powershell
 dotnet restore .\windows\TuckClip.Windows.slnx --locked-mode
@@ -84,10 +105,12 @@ dotnet restore .\windows\TuckClip.Windows.slnx --locked-mode
 dotnet run --project .\windows\src\TuckClip.Windows\TuckClip.Windows.csproj
 ```
 
-## 参与项目
+For project structure, development setup, and pull request guidance, read [CONTRIBUTING.md](CONTRIBUTING.md).
 
-欢迎提交 issue 和 pull request。开始前请阅读 [贡献指南](CONTRIBUTING.md)、[行为准则](CODE_OF_CONDUCT.md) 与 [安全政策](SECURITY.md)。
+## Community and security
 
-## 许可证
+Issues and pull requests are welcome. Please follow the [Code of Conduct](CODE_OF_CONDUCT.md). To report a vulnerability privately, use the process described in the [Security Policy](SECURITY.md).
 
-TuckClip 使用 [MIT License](LICENSE)。
+## License
+
+TuckClip is available under the [MIT License](LICENSE).

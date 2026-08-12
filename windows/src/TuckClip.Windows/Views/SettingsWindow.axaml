@@ -11,7 +11,7 @@
     Background="#FF0E142A"
     CanResize="False"
     ShowInTaskbar="False"
-    Title="TuckClip 设置"
+    Title="{DynamicResource TuckClip 设置}"
     WindowStartupLocation="CenterOwner">
   <Window.Styles>
     <Style Selector="Border.section">
@@ -64,26 +64,26 @@
             Text="⧉" />
       </Border>
       <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
-        <TextBlock FontSize="18" FontWeight="SemiBold" Foreground="White" Text="TuckClip 设置" />
-        <TextBlock Classes="detail" Text="剪贴板内容仅保存在这台电脑上" />
+        <TextBlock FontSize="18" FontWeight="SemiBold" Foreground="White" Text="{DynamicResource TuckClip 设置}" />
+        <TextBlock Classes="detail" Text="{DynamicResource 剪贴板内容仅保存在这台电脑上}" />
       </StackPanel>
       <Button
           Grid.Column="2"
           Classes="action"
           Click="OnHideClick"
-          Content="完成" />
+          Content="{DynamicResource 完成}" />
     </Grid>
 
     <Grid Grid.Row="1">
       <TabControl Margin="20,0,20,20">
-        <TabItem Header="记录">
+        <TabItem Header="{DynamicResource 记录}">
           <ScrollViewer VerticalScrollBarVisibility="Auto">
             <StackPanel Margin="2,14,2,4" Spacing="13">
-              <TextBlock Classes="sectionTitle" Text="快捷键" />
+              <TextBlock Classes="sectionTitle" Text="{DynamicResource 快捷键}" />
               <Border Classes="section">
                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
                   <StackPanel Spacing="5">
-                    <TextBlock Classes="rowTitle" Text="唤起 TuckClip" />
+                    <TextBlock Classes="rowTitle" Text="{DynamicResource 唤起 TuckClip}" />
                     <TextBlock
                         Classes="detail"
                         Foreground="#FFFF9C9C"
@@ -105,47 +105,47 @@
                     <Button
                         Classes="action"
                         Command="{Binding RestoreDefaultHotKeyCommand}"
-                        Content="恢复默认"
+                        Content="{DynamicResource 恢复默认}"
                         IsEnabled="{Binding CanRestoreDefaultHotKey}" />
                   </StackPanel>
                 </Grid>
               </Border>
 
-              <TextBlock Classes="sectionTitle" Text="记录行为" />
+              <TextBlock Classes="sectionTitle" Text="{DynamicResource 记录行为}" />
               <Border Classes="section">
                 <StackPanel Spacing="16">
                   <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
                     <StackPanel Spacing="3">
-                      <TextBlock Classes="rowTitle" Text="记录剪贴板历史" />
-                      <TextBlock Classes="detail" Text="关闭后不会读取新的剪贴板内容" />
+                      <TextBlock Classes="rowTitle" Text="{DynamicResource 记录剪贴板历史}" />
+                      <TextBlock Classes="detail" Text="{DynamicResource 关闭后不会读取新的剪贴板内容}" />
                     </StackPanel>
                     <ToggleSwitch Grid.Column="1" IsChecked="{Binding RecordingEnabled, Mode=TwoWay}" />
                   </Grid>
                   <Border Height="1" Background="#12FFFFFF" />
                   <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
                     <StackPanel Spacing="3">
-                      <TextBlock Classes="rowTitle" Text="选择后自动粘贴" />
-                      <TextBlock Classes="detail" Text="关闭时仅把内容恢复到系统剪贴板" />
+                      <TextBlock Classes="rowTitle" Text="{DynamicResource 选择后自动粘贴}" />
+                      <TextBlock Classes="detail" Text="{DynamicResource 关闭时仅把内容恢复到系统剪贴板}" />
                     </StackPanel>
                     <ToggleSwitch Grid.Column="1" IsChecked="{Binding AutomaticPasteEnabled, Mode=TwoWay}" />
                   </Grid>
                   <Border Height="1" Background="#12FFFFFF" />
                   <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
                     <StackPanel Spacing="3">
-                      <TextBlock Classes="rowTitle" Text="捕获图片" />
-                      <TextBlock Classes="detail" Text="图片占用空间较多，可随时关闭" />
+                      <TextBlock Classes="rowTitle" Text="{DynamicResource 捕获图片}" />
+                      <TextBlock Classes="detail" Text="{DynamicResource 图片占用空间较多，可随时关闭}" />
                     </StackPanel>
                     <ToggleSwitch Grid.Column="1" IsChecked="{Binding CapturesImages, Mode=TwoWay}" />
                   </Grid>
                 </StackPanel>
               </Border>
 
-              <TextBlock Classes="sectionTitle" Text="容量" />
+              <TextBlock Classes="sectionTitle" Text="{DynamicResource 容量}" />
               <Border Classes="section">
                 <Grid RowDefinitions="Auto,1,Auto" ColumnDefinitions="*,Auto" RowSpacing="12">
                   <StackPanel Grid.Row="0" Spacing="3">
-                    <TextBlock Classes="rowTitle" Text="保留期" />
-                    <TextBlock Classes="detail" Text="到期记录会自动清理，置顶项除外" />
+                    <TextBlock Classes="rowTitle" Text="{DynamicResource 保留期}" />
+                    <TextBlock Classes="detail" Text="{DynamicResource 到期记录会自动清理，置顶项除外}" />
                   </StackPanel>
                   <ComboBox
                       Grid.Row="0"
@@ -155,8 +155,8 @@
                       SelectedItem="{Binding RetentionDays, Mode=TwoWay}" />
                   <Border Grid.Row="1" Grid.ColumnSpan="2" Background="#12FFFFFF" />
                   <StackPanel Grid.Row="2" Spacing="3">
-                    <TextBlock Classes="rowTitle" Text="最大条数" />
-                    <TextBlock Classes="detail" Text="达到上限后优先清理最早的未置顶记录" />
+                    <TextBlock Classes="rowTitle" Text="{DynamicResource 最大条数}" />
+                    <TextBlock Classes="detail" Text="{DynamicResource 达到上限后优先清理最早的未置顶记录}" />
                   </StackPanel>
                   <ComboBox
                       Grid.Row="2"
@@ -166,20 +166,36 @@
                       SelectedItem="{Binding MaximumItemCount, Mode=TwoWay}" />
                 </Grid>
               </Border>
+
+              <TextBlock Classes="sectionTitle" Text="{DynamicResource 语言}" />
+              <Border Classes="section">
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+                  <StackPanel Spacing="3">
+                    <TextBlock Classes="rowTitle" Text="{DynamicResource 界面语言}" />
+                    <TextBlock Classes="detail" Text="{DynamicResource 语言切换会立即应用}" />
+                  </StackPanel>
+                  <ComboBox
+                      Grid.Column="1"
+                      Width="170"
+                      DisplayMemberBinding="{Binding DisplayName}"
+                      ItemsSource="{Binding LanguageOptions}"
+                      SelectedItem="{Binding SelectedLanguageOption, Mode=TwoWay}" />
+                </Grid>
+              </Border>
             </StackPanel>
           </ScrollViewer>
         </TabItem>
 
-        <TabItem Header="隐私">
+        <TabItem Header="{DynamicResource 隐私}">
           <ScrollViewer VerticalScrollBarVisibility="Auto">
             <StackPanel Margin="2,14,2,4" Spacing="13">
-              <TextBlock Classes="sectionTitle" Text="排除应用" />
+              <TextBlock Classes="sectionTitle" Text="{DynamicResource 排除应用}" />
               <Border Classes="section">
                 <StackPanel Spacing="10">
-                  <TextBlock Classes="rowTitle" Text="不记录这些进程" />
+                  <TextBlock Classes="rowTitle" Text="{DynamicResource 不记录这些进程}" />
                   <TextBlock
                       Classes="detail"
-                      Text="每行填写一个进程名，例如 KeePassXC.exe。密码管理器建议始终排除。"
+                      Text="{DynamicResource 每行填写一个进程名，例如 KeePassXC.exe。密码管理器建议始终排除。}"
                       TextWrapping="Wrap" />
                   <TextBox
                       Height="190"
@@ -199,7 +215,7 @@
                         Grid.Column="1"
                         Classes="action"
                         Command="{Binding ApplyExcludedProcessNamesCommand}"
-                        Content="保存排除列表" />
+                        Content="{DynamicResource 保存排除列表}" />
                   </Grid>
                 </StackPanel>
               </Border>
@@ -210,17 +226,17 @@
                   <TextBlock
                       Classes="detail"
                       VerticalAlignment="Center"
-                      Text="TuckClip 不包含账号、云同步、遥测或网络上传。" />
+                      Text="{DynamicResource TuckClip 不包含账号、云同步、遥测或网络上传。}" />
                 </StackPanel>
               </Border>
             </StackPanel>
           </ScrollViewer>
         </TabItem>
 
-        <TabItem Header="存储">
+        <TabItem Header="{DynamicResource 存储}">
           <ScrollViewer VerticalScrollBarVisibility="Auto">
             <StackPanel Margin="2,14,2,4" Spacing="13">
-              <TextBlock Classes="sectionTitle" Text="本地数据" />
+              <TextBlock Classes="sectionTitle" Text="{DynamicResource 本地数据}" />
               <Border Classes="section">
                 <StackPanel Spacing="12">
                   <Border
@@ -229,11 +245,11 @@
                       CornerRadius="9"
                       IsVisible="{Binding HasStorageError}">
                     <StackPanel Spacing="3">
-                      <TextBlock FontWeight="SemiBold" Foreground="#FFFFC18A" Text="存储状态异常" />
+                      <TextBlock FontWeight="SemiBold" Foreground="#FFFFC18A" Text="{DynamicResource 存储状态异常}" />
                       <TextBlock Classes="detail" Text="{Binding StorageError}" TextWrapping="Wrap" />
                     </StackPanel>
                   </Border>
-                  <TextBlock Classes="rowTitle" Text="数据目录" />
+                  <TextBlock Classes="rowTitle" Text="{DynamicResource 数据目录}" />
                   <TextBox
                       IsReadOnly="True"
                       FontFamily="Consolas"
@@ -244,42 +260,42 @@
                     <TextBlock
                         Classes="detail"
                         VerticalAlignment="Center"
-                        Text="历史数据库与图片只保存在本机。" />
+                        Text="{DynamicResource 历史数据库与图片只保存在本机。}" />
                     <Button
                         Grid.Column="1"
                         Classes="action"
                         Command="{Binding RevealDataDirectoryCommand}"
-                        Content="在资源管理器中显示" />
+                        Content="{DynamicResource 在资源管理器中显示}" />
                   </Grid>
                 </StackPanel>
               </Border>
 
-              <TextBlock Classes="sectionTitle" Text="清理" />
+              <TextBlock Classes="sectionTitle" Text="{DynamicResource 清理}" />
               <Border Classes="section">
                 <StackPanel Spacing="14">
                   <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
                     <StackPanel Spacing="3">
-                      <TextBlock Classes="rowTitle" Text="清除未置顶历史" />
-                      <TextBlock Classes="detail" Text="保留你主动置顶的常用片段" />
+                      <TextBlock Classes="rowTitle" Text="{DynamicResource 清除未置顶历史}" />
+                      <TextBlock Classes="detail" Text="{DynamicResource 保留你主动置顶的常用片段}" />
                     </StackPanel>
                     <Button
                         Grid.Column="1"
                         Classes="action"
                         Command="{Binding RequestClearUnpinnedCommand}"
-                        Content="清除…"
+                        Content="{DynamicResource 清除…}"
                         IsEnabled="{Binding CanClearHistory}" />
                   </Grid>
                   <Border Height="1" Background="#12FFFFFF" />
                   <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
                     <StackPanel Spacing="3">
-                      <TextBlock Classes="rowTitle" Text="清除所有本地数据" />
-                      <TextBlock Classes="detail" Text="包括置顶项；此操作不可撤销" />
+                      <TextBlock Classes="rowTitle" Text="{DynamicResource 清除所有本地数据}" />
+                      <TextBlock Classes="detail" Text="{DynamicResource 包括置顶项；此操作不可撤销}" />
                     </StackPanel>
                     <Button
                         Grid.Column="1"
                         Classes="action danger"
                         Command="{Binding RequestClearAllCommand}"
-                        Content="全部清除…"
+                        Content="{DynamicResource 全部清除…}"
                         IsEnabled="{Binding CanClearHistory}" />
                   </Grid>
                 </StackPanel>
@@ -313,8 +329,8 @@
                 Text="{Binding ClearConfirmationDetail}"
                 TextWrapping="Wrap" />
             <StackPanel HorizontalAlignment="Right" Orientation="Horizontal" Spacing="9">
-              <Button Classes="action" Command="{Binding CancelClearCommand}" Content="取消" />
-              <Button Classes="action danger" Command="{Binding ConfirmClearCommand}" Content="确认清除" />
+              <Button Classes="action" Command="{Binding CancelClearCommand}" Content="{DynamicResource 取消}" />
+              <Button Classes="action danger" Command="{Binding ConfirmClearCommand}" Content="{DynamicResource 确认清除}" />
             </StackPanel>
           </StackPanel>
         </Border>

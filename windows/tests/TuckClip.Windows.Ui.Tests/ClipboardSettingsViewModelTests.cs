@@ -1,4 +1,5 @@
 using TuckClip.Platform.Windows.Interop;
+using TuckClip.Windows.Services;
 using TuckClip.Windows.ViewModels;
 
 namespace TuckClip.Windows.Ui.Tests;
@@ -187,6 +188,38 @@ public sealed class ClipboardSettingsViewModelTests
         Assert.AreEqual("Alt+Shift+B", viewModel.HotKeyButtonText);
         Assert.IsTrue(viewModel.HasHotKeyError);
         StringAssert.Contains(viewModel.HotKeyStatusText, "已被占用", StringComparison.Ordinal);
+    }
+
+    [TestMethod]
+    public void SelectingLanguageSubmitsItWithoutChangingOtherSettings()
+    {
+        AppLocalization.Apply(AppLanguage.SimplifiedChinese);
+        var actions = new RecordingUiActions();
+        var viewModel = new ClipboardSettingsViewModel(actions);
+        viewModel.ApplySnapshot(new ClipboardSettingsSnapshot(
+            RecordingEnabled: false,
+            AutomaticPasteEnabled: false,
+            CapturesImages: false,
+            RetentionDays: 90,
+            MaximumItemCount: 1_000,
+            ExcludedProcessNames: ["KeePassXC.exe"],
+            DataDirectory: @"C:\TuckClip",
+            AppLanguage: AppLanguage.SimplifiedChinese));
+
+        viewModel.SelectedLanguageOption = viewModel.LanguageOptions.Single(
+            option => option.Value == AppLanguage.English);
+
+        Assert.HasCount(1, actions.SettingsDrafts);
+        var draft = actions.SettingsDrafts[0];
+        Assert.AreEqual(AppLanguage.English, draft.AppLanguage);
+        Assert.IsFalse(draft.RecordingEnabled);
+        Assert.IsFalse(draft.AutomaticPasteEnabled);
+        Assert.IsFalse(draft.CapturesImages);
+        Assert.AreEqual(90, draft.RetentionDays);
+        Assert.AreEqual(1_000, draft.MaximumItemCount);
+        CollectionAssert.AreEqual(
+            ExpectedCommittedExcludedProcessNames,
+            draft.ExcludedProcessNames.ToArray());
     }
 }
 

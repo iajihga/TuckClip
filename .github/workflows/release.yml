@@ -214,7 +214,7 @@ jobs:
             release_flags+=(--prerelease)
           fi
 
-          notes="TuckClip 首个公开版本，支持 macOS 与 Windows。安装与使用说明请查看仓库 README；所有下载均可通过随附的 SHA-256 文件校验。"
+          notes="TuckClip ${GITHUB_REF_NAME} is available for macOS and Windows. See the repository README for installation and usage instructions. Every download can be verified with the included SHA-256 checksum file."
           gh release create "${GITHUB_REF_NAME}" "${assets[@]}" \
             --verify-tag \
             --generate-notes \

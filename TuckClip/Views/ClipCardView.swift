@@ -8,6 +8,7 @@ struct ClipCardView: View {
     let onPaste: (Bool) -> Void
     let onTogglePin: () -> Void
     let onDelete: () -> Void
+    let language: AppLanguage
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @StateObject private var thumbnailLoader = ClipThumbnailLoader()
@@ -26,7 +27,7 @@ struct ClipCardView: View {
                     Image(systemName: "pin.fill")
                         .font(.caption)
                         .foregroundStyle(TuckClipTheme.cyan)
-                        .accessibilityLabel("已置顶")
+                        .accessibilityLabel(L10n.text("已置顶", language: language))
                 }
             }
 
@@ -67,24 +68,24 @@ struct ClipCardView: View {
         // navigation still changes selection without invoking this closure.
         .onTapGesture { onPaste(false) }
         .contextMenu {
-            Button("粘贴") { onPaste(false) }
+            Button(L10n.text("粘贴", language: language)) { onPaste(false) }
             if item.kind == .text || item.kind == .link {
-                Button("以纯文本粘贴") { onPaste(true) }
+                Button(L10n.text("以纯文本粘贴", language: language)) { onPaste(true) }
             }
             Divider()
-            Button(item.isPinned ? "取消置顶" : "置顶") { onTogglePin() }
-            Button("删除", role: .destructive) { onDelete() }
+            Button(L10n.text(item.isPinned ? "取消置顶" : "置顶", language: language)) { onTogglePin() }
+            Button(L10n.text("删除", language: language), role: .destructive) { onDelete() }
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(item.accessibilitySummary)
+        .accessibilityLabel(item.accessibilitySummary(language: language))
         .accessibilityAddTraits(isSelected ? [.isSelected] : [])
-        .accessibilityAction(named: "粘贴") { onPaste(false) }
-        .accessibilityAction(named: item.isPinned ? "取消置顶" : "置顶") { onTogglePin() }
-        .accessibilityAction(named: "删除") { onDelete() }
+        .accessibilityAction(named: L10n.text("粘贴", language: language)) { onPaste(false) }
+        .accessibilityAction(named: L10n.text(item.isPinned ? "取消置顶" : "置顶", language: language)) { onTogglePin() }
+        .accessibilityAction(named: L10n.text("删除", language: language)) { onDelete() }
     }
 
     private var kindBadge: some View {
-        Label(item.kind.title, systemImage: item.kind.symbolName)
+        Label(item.kind.title(language: language), systemImage: item.kind.symbolName)
             .font(.caption.weight(.semibold))
             .foregroundStyle(item.kind.tint)
             .padding(.horizontal, 9)
@@ -111,14 +112,17 @@ struct ClipCardView: View {
                         : "photo")
                         .font(.title2)
                 }
-                Text(thumbnailLoader.state == .unavailable ? "图片文件不可用" : "正在载入预览")
+                Text(L10n.text(
+                    thumbnailLoader.state == .unavailable ? "图片文件不可用" : "正在载入预览",
+                    language: language
+                ))
                     .font(.caption)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .foregroundStyle(.white.opacity(0.52))
         } else {
             VStack(alignment: .leading, spacing: 6) {
-                Text(item.title.isEmpty ? "无标题内容" : item.title)
+                Text(item.title.isEmpty ? L10n.text("无标题内容", language: language) : item.title)
                     .font(item.kind == .text ? .body : .headline)
                     .fontWeight(item.kind == .text ? .regular : .semibold)
                     .foregroundStyle(.white.opacity(0.94))

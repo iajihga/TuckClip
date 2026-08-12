@@ -79,6 +79,10 @@ final class AppSettings: ObservableObject {
         }
     }
 
+    @Published var appLanguage: AppLanguage {
+        didSet { defaults.set(appLanguage.rawValue, forKey: L10n.settingsKey) }
+    }
+
     private let defaults: UserDefaults
 
     init(defaults: UserDefaults = .standard) {
@@ -135,6 +139,8 @@ final class AppSettings: ObservableObject {
             key: Key.automaticallyPasteAfterSelection,
             fallback: true
         )
+        appLanguage = defaults.string(forKey: L10n.settingsKey)
+            .flatMap(AppLanguage.init(rawValue:)) ?? .system
         if (try? GlobalHotKey(
             keyCode: hotKeyCode,
             modifiers: hotKeyModifiers

@@ -28,6 +28,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var hotKeyWarningMenuItem: NSMenuItem?
     private var retryHotKeyMenuItem: NSMenuItem?
     private var storageWarningMenuItem: NSMenuItem?
+    private var clearMenuItem: NSMenuItem?
+    private var settingsMenuItem: NSMenuItem?
+    private var quitMenuItem: NSMenuItem?
     private var cancellables: Set<AnyCancellable> = []
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -77,12 +80,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     @objc private func clearUnpinned(_ sender: Any?) {
+        let settings = coordinator.uiSettings
         let alert = NSAlert()
-        alert.messageText = "清除未置顶历史？"
-        alert.informativeText = "置顶内容会保留，其他本地剪贴板记录将被永久删除。"
+        alert.messageText = settings.localized("清除未置顶历史？")
+        alert.informativeText = settings.localized("置顶内容会保留，其他本地剪贴板记录将被永久删除。")
         alert.alertStyle = .warning
-        alert.addButton(withTitle: "清除")
-        alert.addButton(withTitle: "取消")
+        alert.addButton(withTitle: settings.localized("清除"))
+        alert.addButton(withTitle: settings.localized("取消"))
         NSApp.activate(ignoringOtherApps: true)
         if alert.runModal() == .alertFirstButtonReturn {
             coordinator.panelViewModel.clearUnpinned()
@@ -167,6 +171,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         )
         clearItem.target = self
         menu.addItem(clearItem)
+        clearMenuItem = clearItem
 
         let settingsItem = NSMenuItem(
             title: "设置…",
@@ -176,6 +181,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         settingsItem.keyEquivalentModifierMask = [.command]
         settingsItem.target = self
         menu.addItem(settingsItem)
+        settingsMenuItem = settingsItem
 
         menu.addItem(.separator())
 
@@ -187,6 +193,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         quitItem.keyEquivalentModifierMask = [.command]
         quitItem.target = self
         menu.addItem(quitItem)
+        quitMenuItem = quitItem
 
         item.menu = menu
         statusItem = item
@@ -237,13 +244,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 self?.updateStatusPresentation()
             }
             .store(in: &cancellables)
+
+        coordinator.uiSettings.$appLanguage
+            .removeDuplicates()
+            .sink { [weak self] language in
+                self?.updateStatusPresentation(language: language)
+            }
+            .store(in: &cancellables)
     }
 
     private func updateStatusPresentation(
         recordingEnabled: Bool? = nil,
-        hotKey: GlobalHotKey? = nil
+        hotKey: GlobalHotKey? = nil,
+        language: AppLanguage? = nil
     ) {
         let settings = coordinator.uiSettings
+        let preference = language ?? settings.appLanguage
+        let localized: (String) -> String = {
+            L10n.text($0, language: preference)
+        }
         let isRecording = recordingEnabled ?? settings.recordingEnabled
         let isAccessReady = settings.isPasteboardAccessReady
         let symbolName: String
@@ -257,13 +276,31 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let image = NSImage(systemSymbolName: symbolName, accessibilityDescription: nil)
         image?.isTemplate = true
         statusItem?.button?.image = image
-        statusItem?.button?.toolTip = "TuckClip · \(settings.recordingStatusTitle(for: isRecording))"
-        recordingMenuItem?.title = isRecording ? "暂停记录" : "恢复记录"
+        let recordingStatusTitle = settings.recordingStatusTitle(
+            for: isRecording,
+            language: preference
+        )
+        statusItem?.button?.toolTip = "TuckClip · \(recordingStatusTitle)"
+        recordingMenuItem?.title = localized(
+            isRecording ? "暂停记录" : "恢复记录"
+        )
         recordingMenuItem?.state = isRecording ? .on : .off
-        openMenuItem?.title = "打开 TuckClip（\((hotKey ?? settings.globalHotKey).displayText)）"
+        openMenuItem?.title = L10n.format(
+            "打开 TuckClip（%@）",
+            language: preference,
+            (hotKey ?? settings.globalHotKey).displayText
+        )
+        retryHotKeyMenuItem?.title = localized("重新注册快捷键")
+        clearMenuItem?.title = localized("清除未置顶历史…")
+        settingsMenuItem?.title = localized("设置…")
+        quitMenuItem?.title = localized("退出 TuckClip")
 
         if let error = settings.hotKeyErrorDescription {
-            hotKeyWarningMenuItem?.title = "快捷键不可用：\(error)"
+            hotKeyWarningMenuItem?.title = L10n.format(
+                "快捷键不可用：%@",
+                language: preference,
+                error
+            )
             hotKeyWarningMenuItem?.isHidden = false
             retryHotKeyMenuItem?.isHidden = false
         } else {
@@ -272,8 +309,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
 
         storageWarningMenuItem?.title = settings.isStorageReadOnly
-            ? "历史已受保护，查看设置…"
-            : "最近一次保存失败，查看设置…"
+            ? localized("历史已受保护，查看设置…")
+            : localized("最近一次保存失败，查看设置…")
         storageWarningMenuItem?.isHidden = settings.storageErrorDescription == nil
     }
 }

@@ -9,12 +9,12 @@ enum HotKeyRegistrationError: LocalizedError, Equatable {
     var errorDescription: String? {
         switch self {
         case .eventHandlerInstallationFailed(let status):
-            return "无法安装全局快捷键处理器（OSStatus \(status)）"
+            return L10n.format("无法安装全局快捷键处理器（OSStatus %d）", Int(status))
         case .registrationFailed(let status):
             if status == eventHotKeyExistsErr {
-                return "已被系统或其他应用占用"
+                return L10n.text("已被系统或其他应用占用")
             }
-            return "无法注册全局快捷键（OSStatus \(status)）"
+            return L10n.format("无法注册全局快捷键（OSStatus %d）", Int(status))
         }
     }
 }

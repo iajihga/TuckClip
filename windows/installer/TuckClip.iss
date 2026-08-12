@@ -1,8 +1,8 @@
 #ifndef Version
-  #define Version "0.1.0"
+  #define Version "0.1.2"
 #endif
 #ifndef NumericVersion
-  #define NumericVersion "0.1.0"
+  #define NumericVersion "0.1.2"
 #endif
 #ifndef Runtime
   #define Runtime "win-x64"
@@ -77,7 +77,7 @@ Name: "desktopicon"; Description: "创建桌面快捷方式"; GroupDescription: 
 Source: "{#SourceDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "..\..\LICENSE"; DestDir: "{app}"; DestName: "LICENSE.txt"; Flags: ignoreversion
 Source: "..\..\README.md"; DestDir: "{app}"; Flags: ignoreversion
-Source: "..\..\README.en.md"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\..\README.zh-CN.md"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 Name: "{group}\TuckClip"; Filename: "{app}\TuckClip.exe"

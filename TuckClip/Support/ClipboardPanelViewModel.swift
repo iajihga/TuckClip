@@ -10,14 +10,16 @@ enum ClipDisplayKind: String, CaseIterable, Identifiable, Codable {
 
     var id: Self { self }
 
-    var title: String {
+    func title(language: AppLanguage? = nil) -> String {
         switch self {
-        case .text: "文本"
-        case .link: "链接"
-        case .image: "图片"
-        case .files: "文件"
+        case .text: L10n.text("文本", language: language)
+        case .link: L10n.text("链接", language: language)
+        case .image: L10n.text("图片", language: language)
+        case .files: L10n.text("文件", language: language)
         }
     }
+
+    var title: String { title() }
 
     var symbolName: String {
         switch self {
@@ -38,15 +40,17 @@ enum ClipTypeFilter: String, CaseIterable, Identifiable {
 
     var id: Self { self }
 
-    var title: String {
+    func title(language: AppLanguage? = nil) -> String {
         switch self {
-        case .all: "全部"
-        case .text: "文本"
-        case .link: "链接"
-        case .image: "图片"
-        case .files: "文件"
+        case .all: L10n.text("全部", language: language)
+        case .text: L10n.text("文本", language: language)
+        case .link: L10n.text("链接", language: language)
+        case .image: L10n.text("图片", language: language)
+        case .files: L10n.text("文件", language: language)
         }
     }
+
+    var title: String { title() }
 
     var symbolName: String {
         switch self {
@@ -110,10 +114,19 @@ struct ClipDisplayItem: Identifiable, Hashable {
         self.thumbnailURL = thumbnailURL
     }
 
-    var accessibilitySummary: String {
-        let pinState = isPinned ? "，已置顶" : ""
-        return "\(kind.title)，\(title)，来源 \(sourceName)\(pinState)"
+    func accessibilitySummary(language: AppLanguage? = nil) -> String {
+        let pinState = isPinned ? L10n.text("，已置顶", language: language) : ""
+        return L10n.format(
+            "%@，%@，来源 %@%@",
+            language: language,
+            kind.title(language: language),
+            title,
+            sourceName,
+            pinState
+        )
     }
+
+    var accessibilitySummary: String { accessibilitySummary() }
 }
 
 struct PanelNotice: Identifiable, Equatable {
@@ -282,17 +295,17 @@ final class ClipboardPanelViewModel: ObservableObject {
             let message: String
             switch reason {
             case .automaticPasteDisabled:
-                message = "已复制到剪贴板"
+                message = L10n.text("已复制到剪贴板")
             case .eventPostingPermissionDenied:
-                message = "已复制，请按 ⌘V；自动粘贴可在设置中授权"
+                message = L10n.text("已复制，请按 ⌘V；自动粘贴可在设置中授权")
             case .targetApplicationUnavailable:
-                message = "已复制；没有可自动粘贴的目标"
+                message = L10n.text("已复制；没有可自动粘贴的目标")
             case .targetActivationFailed:
-                message = "已复制；无法切回目标应用，请按 ⌘V"
+                message = L10n.text("已复制；无法切回目标应用，请按 ⌘V")
             case .clipboardContentsChanged:
-                message = "剪贴板已被其他应用改写；为避免粘错，已取消自动粘贴"
+                message = L10n.text("剪贴板已被其他应用改写；为避免粘错，已取消自动粘贴")
             case .keyboardEventCreationFailed:
-                message = "已复制；自动粘贴失败，请按 ⌘V"
+                message = L10n.text("已复制；自动粘贴失败，请按 ⌘V")
             }
             notice = PanelNotice(
                 kind: reason == .clipboardContentsChanged ? .error : .copied,
@@ -301,7 +314,7 @@ final class ClipboardPanelViewModel: ObservableObject {
         case .failed(let error):
             notice = PanelNotice(
                 kind: .error,
-                message: error.errorDescription ?? "写入系统剪贴板失败"
+                message: error.errorDescription ?? L10n.text("写入系统剪贴板失败")
             )
         }
 
@@ -312,6 +325,10 @@ final class ClipboardPanelViewModel: ObservableObject {
             guard !Task.isCancelled, self?.notice?.id == noticeID else { return }
             self?.notice = nil
         }
+    }
+
+    func refreshLocalization() {
+        objectWillChange.send()
     }
 
     private func repairSelection() {

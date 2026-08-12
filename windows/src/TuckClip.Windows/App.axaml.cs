@@ -15,7 +15,11 @@ public sealed partial class App : Application, IDisposable
     private Task? _shutdownTask;
     private int _exitCode;
 
-    public override void Initialize() => AvaloniaXamlLoader.Load(this);
+    public override void Initialize()
+    {
+        AvaloniaXamlLoader.Load(this);
+        AppLocalization.Apply(AppLanguage.System);
+    }
 
     public override void OnFrameworkInitializationCompleted()
     {

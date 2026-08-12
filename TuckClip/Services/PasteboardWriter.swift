@@ -16,17 +16,17 @@ enum PasteboardWriteError: LocalizedError, Equatable {
     var errorDescription: String? {
         switch self {
         case .missingText:
-            return "这条记录已没有可复制的文本"
+            return L10n.text("这条记录已没有可复制的文本")
         case .missingImageData:
-            return "这条记录的图片文件已丢失"
+            return L10n.text("这条记录的图片文件已丢失")
         case .missingFilePaths:
-            return "这条记录已没有可复制的文件路径"
+            return L10n.text("这条记录已没有可复制的文件路径")
         case .itemTooLarge:
-            return "这条记录超过对应类型的安全上限"
+            return L10n.text("这条记录超过对应类型的安全上限")
         case .unsupportedImageData:
-            return "保存的图片无法转换为 PNG"
+            return L10n.text("保存的图片无法转换为 PNG")
         case .pasteboardRejectedWrite:
-            return "macOS 拒绝写入系统剪贴板"
+            return L10n.text("macOS 拒绝写入系统剪贴板")
         }
     }
 }

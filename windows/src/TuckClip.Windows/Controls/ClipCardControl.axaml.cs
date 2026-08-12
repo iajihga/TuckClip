@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
 using TuckClip.Windows.ViewModels;
+using TuckClip.Windows.Services;
 
 namespace TuckClip.Windows.Controls;
 
@@ -22,6 +23,7 @@ public sealed partial class ClipCardControl : UserControl
         AttachedToVisualTree += (_, _) =>
         {
             _isAttached = true;
+            AppLocalization.LanguageChanged += OnLanguageChanged;
             _topLevel = TopLevel.GetTopLevel(this);
             if (_topLevel is not null)
             {
@@ -33,6 +35,7 @@ public sealed partial class ClipCardControl : UserControl
         DetachedFromVisualTree += (_, _) =>
         {
             _isAttached = false;
+            AppLocalization.LanguageChanged -= OnLanguageChanged;
             if (_topLevel is not null)
             {
                 _topLevel.PropertyChanged -= OnTopLevelPropertyChanged;
@@ -95,7 +98,7 @@ public sealed partial class ClipCardControl : UserControl
             return;
         }
 
-        PreviewStatusText.Text = "正在加载…";
+        PreviewStatusText.Text = AppLocalization.Text("正在加载…");
         var generation = _thumbnailGeneration;
         var cancellation = new CancellationTokenSource();
         _thumbnailCancellation = cancellation;
@@ -116,6 +119,13 @@ public sealed partial class ClipCardControl : UserControl
             // top-level property notification, so resume on the next UI turn.
             Dispatcher.UIThread.Post(RefreshThumbnail);
         }
+    }
+
+    private void OnLanguageChanged(object? sender, EventArgs e)
+    {
+        _ = sender;
+        PreviewStatusText.Text = AppLocalization.Text(
+            _thumbnailCancellation is not null ? "正在加载…" : "图片预览不可用");
     }
 
     private async Task LoadThumbnailAsync(
@@ -140,7 +150,7 @@ public sealed partial class ClipCardControl : UserControl
         {
             if (CanApplyThumbnail(item, generation, cancellationToken))
             {
-                PreviewStatusText.Text = "图片预览不可用";
+                PreviewStatusText.Text = AppLocalization.Text("图片预览不可用");
             }
 
             return;
@@ -183,7 +193,7 @@ public sealed partial class ClipCardControl : UserControl
         PreviewImage.Source = null;
         PreviewImage.IsVisible = false;
         PreviewPlaceholder.IsVisible = true;
-        PreviewStatusText.Text = "图片预览不可用";
+        PreviewStatusText.Text = AppLocalization.Text("图片预览不可用");
 
         _thumbnailLease?.Dispose();
         _thumbnailLease = null;

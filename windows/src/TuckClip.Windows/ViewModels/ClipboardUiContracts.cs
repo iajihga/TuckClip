@@ -1,4 +1,5 @@
 using TuckClip.Platform.Windows.Interop;
+using TuckClip.Windows.Services;
 
 namespace TuckClip.Windows.ViewModels;
 
@@ -30,7 +31,8 @@ public sealed record ClipboardSettingsSnapshot(
     bool IsStorageReadOnly = false,
     string? StorageError = null,
     GlobalHotKey? GlobalHotKey = null,
-    string? HotKeyError = null);
+    string? HotKeyError = null,
+    AppLanguage AppLanguage = AppLanguage.System);
 
 public sealed record ClipboardSettingsDraft(
     bool RecordingEnabled,
@@ -38,7 +40,8 @@ public sealed record ClipboardSettingsDraft(
     bool CapturesImages,
     int RetentionDays,
     int MaximumItemCount,
-    IReadOnlyList<string> ExcludedProcessNames);
+    IReadOnlyList<string> ExcludedProcessNames,
+    AppLanguage AppLanguage = AppLanguage.System);
 
 /// <summary>
 /// The only outward-facing dependency of the Windows UI. The application

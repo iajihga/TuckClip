@@ -153,24 +153,30 @@ final class SystemClipboardUIBridge: ClipboardUIBridge {
         switch item.kind {
         case .text:
             let text = item.plainText?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-            title = text.isEmpty ? "空文本" : Self.preview(text)
-            detail = item.copyCount > 1 ? "复制 \(item.copyCount) 次" : ""
+            title = text.isEmpty ? L10n.text("空文本") : Self.preview(text)
+            detail = item.copyCount > 1 ? L10n.format("复制 %d 次", item.copyCount) : ""
             searchableContent = text
         case .link:
             let text = item.plainText?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-            title = URL(string: text)?.host ?? (text.isEmpty ? "链接" : Self.preview(text))
+            title = URL(string: text)?.host ?? (text.isEmpty ? L10n.text("链接") : Self.preview(text))
             detail = Self.preview(text)
             searchableContent = text
         case .image:
-            title = "图片"
-            detail = item.copyCount > 1 ? "复制 \(item.copyCount) 次" : "本地图片"
+            title = L10n.text("图片")
+            detail = item.copyCount > 1
+                ? L10n.format("复制 %d 次", item.copyCount)
+                : L10n.text("本地图片")
             searchableContent = ""
         case .files:
             let names = item.filePaths.map { URL(fileURLWithPath: $0).lastPathComponent }
-            title = Self.preview(names.first ?? "文件", maximumCharacters: 160)
+            title = Self.preview(names.first ?? L10n.text("文件"), maximumCharacters: 160)
             if names.count > 1 {
                 detail = Self.preview(
-                    "\(names.count) 个文件 · \(names.dropFirst().prefix(2).joined(separator: "、"))"
+                    L10n.format(
+                        "%d 个文件 · %@",
+                        names.count,
+                        names.dropFirst().prefix(2).joined(separator: L10n.text("、"))
+                    )
                 )
             } else {
                 detail = Self.preview(item.filePaths.first ?? "")
@@ -184,7 +190,7 @@ final class SystemClipboardUIBridge: ClipboardUIBridge {
             title: title,
             detail: detail,
             searchableContent: searchableContent,
-            sourceName: item.sourceAppName ?? "未知应用",
+            sourceName: item.sourceAppName ?? L10n.text("未知应用"),
             sourceBundleIdentifier: item.sourceBundleIdentifier,
             capturedAt: item.updatedAt,
             isPinned: item.isPinned,

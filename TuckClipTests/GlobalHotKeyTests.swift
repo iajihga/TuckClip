@@ -46,6 +46,30 @@ final class GlobalHotKeyTests: XCTestCase {
         XCTAssertEqual(AppSettings(defaults: defaults).globalHotKey, .defaultValue)
     }
 
+    func testControlOptionVIsAcceptedDisplayedAndPersisted() throws {
+        let suiteName = "TuckClipControlOptionHotKeyTests.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        let hotKey = try GlobalHotKey(
+            keyCode: UInt32(kVK_ANSI_V),
+            modifiers: UInt32(controlKey | optionKey)
+        ).validated()
+        let settings = AppSettings(defaults: defaults)
+        settings.setHotKey(hotKey)
+
+        XCTAssertEqual(hotKey.displayText, "⌃⌥V")
+        XCTAssertEqual(AppSettings(defaults: defaults).globalHotKey, hotKey)
+    }
+
+    func testRecorderMapsMacControlAndOptionToHotKeyModifiers() {
+        let modifiers = HotKeyCaptureView.CaptureView.carbonModifiers(
+            from: [.control, .option]
+        )
+
+        XCTAssertEqual(modifiers, UInt32(controlKey | optionKey))
+    }
+
     func testRecorderRejectsIncompleteGestureAndDoesNotOpenPanelForCurrentHotKey() throws {
         let suiteName = "TuckClipHotKeyRecorderTests.\(UUID().uuidString)"
         let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))

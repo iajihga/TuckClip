@@ -114,7 +114,7 @@
                 FontSize="14"
                 Foreground="White"
                 Text="{Binding SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                PlaceholderText="搜索内容或来源应用" />
+                PlaceholderText="{DynamicResource 搜索内容或来源应用}" />
             <Button
                 Grid.Column="2"
                 Margin="0,0,6,0"
@@ -126,7 +126,7 @@
                 Foreground="#80FFFFFF"
                 IsVisible="{Binding HasSearch}"
                 Content="×"
-                ToolTip.Tip="清除搜索" />
+                ToolTip.Tip="{DynamicResource 清除搜索}" />
           </Grid>
         </Border>
 
@@ -175,13 +175,13 @@
             Classes="chrome"
             Click="OnSettingsClick"
             Content="⚙"
-            ToolTip.Tip="设置" />
+            ToolTip.Tip="{DynamicResource 设置}" />
         <Button
             Grid.Column="4"
             Classes="chrome"
             Click="OnCloseClick"
             Content="×"
-            ToolTip.Tip="隐藏 TuckClip" />
+            ToolTip.Tip="{DynamicResource 隐藏 TuckClip}" />
       </Grid>
 
       <StackPanel
@@ -189,11 +189,11 @@
           Margin="20,0,20,7"
           Orientation="Horizontal"
           Spacing="7">
-        <Button Classes="filter" Background="{Binding AllFilterBrush}" Click="OnAllFilterClick" Content="▦  全部" />
-        <Button Classes="filter" Background="{Binding TextFilterBrush}" Click="OnTextFilterClick" Content="≡  文本" />
-        <Button Classes="filter" Background="{Binding LinkFilterBrush}" Click="OnLinkFilterClick" Content="↗  链接" />
-        <Button Classes="filter" Background="{Binding ImageFilterBrush}" Click="OnImageFilterClick" Content="▧  图片" />
-        <Button Classes="filter" Background="{Binding FilesFilterBrush}" Click="OnFilesFilterClick" Content="▱  文件" />
+        <Button Classes="filter" Background="{Binding AllFilterBrush}" Click="OnAllFilterClick"><StackPanel Orientation="Horizontal" Spacing="5"><TextBlock Text="▦" /><TextBlock Text="{DynamicResource 全部}" /></StackPanel></Button>
+        <Button Classes="filter" Background="{Binding TextFilterBrush}" Click="OnTextFilterClick"><StackPanel Orientation="Horizontal" Spacing="5"><TextBlock Text="≡" /><TextBlock Text="{DynamicResource 文本}" /></StackPanel></Button>
+        <Button Classes="filter" Background="{Binding LinkFilterBrush}" Click="OnLinkFilterClick"><StackPanel Orientation="Horizontal" Spacing="5"><TextBlock Text="↗" /><TextBlock Text="{DynamicResource 链接}" /></StackPanel></Button>
+        <Button Classes="filter" Background="{Binding ImageFilterBrush}" Click="OnImageFilterClick"><StackPanel Orientation="Horizontal" Spacing="5"><TextBlock Text="▧" /><TextBlock Text="{DynamicResource 图片}" /></StackPanel></Button>
+        <Button Classes="filter" Background="{Binding FilesFilterBrush}" Click="OnFilesFilterClick"><StackPanel Orientation="Horizontal" Spacing="5"><TextBlock Text="▱" /><TextBlock Text="{DynamicResource 文件}" /></StackPanel></Button>
       </StackPanel>
 
       <Grid Grid.Row="2" Margin="20,0">
@@ -264,23 +264,23 @@
             Spacing="10">
           <StackPanel Orientation="Horizontal" Spacing="4">
             <Border Background="#12FFFFFF" CornerRadius="4"><TextBlock Classes="key" Text="↑ ↓" /></Border>
-            <TextBlock VerticalAlignment="Center" FontSize="10" Foreground="#75FFFFFF" Text="选择" />
+            <TextBlock VerticalAlignment="Center" FontSize="10" Foreground="#75FFFFFF" Text="{DynamicResource 选择}" />
           </StackPanel>
           <StackPanel Orientation="Horizontal" Spacing="4">
             <Border Background="#12FFFFFF" CornerRadius="4"><TextBlock Classes="key" Text="Enter" /></Border>
-            <TextBlock VerticalAlignment="Center" FontSize="10" Foreground="#75FFFFFF" Text="粘贴" />
+            <TextBlock VerticalAlignment="Center" FontSize="10" Foreground="#75FFFFFF" Text="{DynamicResource 粘贴}" />
           </StackPanel>
           <StackPanel Orientation="Horizontal" Spacing="4">
             <Border Background="#12FFFFFF" CornerRadius="4"><TextBlock Classes="key" Text="Ctrl+Enter" /></Border>
-            <TextBlock VerticalAlignment="Center" FontSize="10" Foreground="#75FFFFFF" Text="纯文本" />
+            <TextBlock VerticalAlignment="Center" FontSize="10" Foreground="#75FFFFFF" Text="{DynamicResource 纯文本}" />
           </StackPanel>
           <StackPanel Orientation="Horizontal" Spacing="4">
             <Border Background="#12FFFFFF" CornerRadius="4"><TextBlock Classes="key" Text="Ctrl+D" /></Border>
-            <TextBlock VerticalAlignment="Center" FontSize="10" Foreground="#75FFFFFF" Text="置顶" />
+            <TextBlock VerticalAlignment="Center" FontSize="10" Foreground="#75FFFFFF" Text="{DynamicResource 置顶}" />
           </StackPanel>
           <StackPanel Orientation="Horizontal" Spacing="4">
             <Border Background="#12FFFFFF" CornerRadius="4"><TextBlock Classes="key" Text="Shift+Del" /></Border>
-            <TextBlock VerticalAlignment="Center" FontSize="10" Foreground="#75FFFFFF" Text="删除" />
+            <TextBlock VerticalAlignment="Center" FontSize="10" Foreground="#75FFFFFF" Text="{DynamicResource 删除}" />
           </StackPanel>
         </StackPanel>
       </Grid>

@@ -26,6 +26,8 @@ public sealed record WindowsAppSettings
 
     public GlobalHotKey GlobalHotKey { get; init; } = GlobalHotKey.Default;
 
+    public AppLanguage AppLanguage { get; init; } = AppLanguage.System;
+
     public WindowsAppSettings Validate()
     {
         _ = ToCoreSettings().Validate();
@@ -49,6 +51,9 @@ public sealed record WindowsAppSettings
         {
             ExcludedProcessNames = normalizedExclusions,
             GlobalHotKey = GlobalHotKey.Validate(),
+            AppLanguage = Enum.IsDefined(AppLanguage)
+                ? AppLanguage
+                : global::TuckClip.Windows.Services.AppLanguage.System,
         };
     }
 

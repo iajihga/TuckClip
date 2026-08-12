@@ -8,13 +8,13 @@ struct TuckClipSettingsView: View {
     var body: some View {
         TabView {
             RecordingSettingsPane(settings: settings)
-                .tabItem { Label("记录", systemImage: "doc.on.clipboard") }
+                .tabItem { Label(settings.localized("记录"), systemImage: "doc.on.clipboard") }
 
             PrivacySettingsPane(settings: settings)
-                .tabItem { Label("隐私", systemImage: "hand.raised") }
+                .tabItem { Label(settings.localized("隐私"), systemImage: "hand.raised") }
 
             StorageSettingsPane(settings: settings, panelViewModel: panelViewModel)
-                .tabItem { Label("存储", systemImage: "internaldrive") }
+                .tabItem { Label(settings.localized("存储"), systemImage: "internaldrive") }
         }
         .tint(TuckClipTheme.indigo)
         .frame(width: 640, height: 440)
@@ -26,22 +26,26 @@ private struct RecordingSettingsPane: View {
 
     var body: some View {
         Form {
-            Section("快捷键") {
+            Section(settings.localized("快捷键")) {
                 HStack(alignment: .center, spacing: 12) {
                     SettingsLabel(
-                        title: "唤起 TuckClip",
+                        title: settings.localized("唤起 TuckClip"),
                         detail: settings.hotKeyStatusText,
                         symbol: "keyboard"
                     )
 
                     Spacer()
 
-                    Button(settings.isRecordingHotKey ? "请按组合键…" : settings.hotKeyDisplayText) {
+                    Button(
+                        settings.isRecordingHotKey
+                            ? settings.localized("请按组合键…")
+                            : settings.hotKeyDisplayText
+                    ) {
                         settings.beginHotKeyRecording()
                     }
                     .buttonStyle(.bordered)
 
-                    Button("恢复默认") {
+                    Button(settings.localized("恢复默认")) {
                         settings.restoreDefaultHotKey()
                     }
                     .disabled(settings.globalHotKey == .defaultValue)
@@ -67,47 +71,58 @@ private struct RecordingSettingsPane: View {
             Section {
                 Toggle(isOn: $settings.recordingEnabled) {
                     SettingsLabel(
-                        title: "记录剪贴板历史",
-                        detail: "关闭后不会读取新的剪贴板内容",
+                        title: settings.localized("记录剪贴板历史"),
+                        detail: settings.localized("关闭后不会读取新的剪贴板内容"),
                         symbol: "waveform.path.ecg"
                     )
                 }
 
                 Toggle(isOn: $settings.automaticPasteEnabled) {
                     SettingsLabel(
-                        title: "选择后自动粘贴",
-                        detail: "需要辅助功能权限；未授权时只恢复到系统剪贴板",
+                        title: settings.localized("选择后自动粘贴"),
+                        detail: settings.localized("需要辅助功能权限；未授权时只恢复到系统剪贴板"),
                         symbol: "arrow.turn.down.right"
                     )
                 }
 
                 Toggle(isOn: $settings.capturesImages) {
                     SettingsLabel(
-                        title: "捕获图片",
-                        detail: "图片占用空间较多，可随时关闭",
+                        title: settings.localized("捕获图片"),
+                        detail: settings.localized("图片占用空间较多，可随时关闭"),
                         symbol: "photo"
                     )
                 }
             } header: {
-                Text("记录行为")
+                Text(settings.localized("记录行为"))
             }
 
-            Section("容量") {
-                Picker("保留期", selection: $settings.retentionDays) {
-                    Text("1 天").tag(1)
-                    Text("7 天").tag(7)
-                    Text("30 天").tag(30)
-                    Text("90 天").tag(90)
-                    Text("1 年").tag(365)
+            Section(settings.localized("容量")) {
+                Picker(settings.localized("保留期"), selection: $settings.retentionDays) {
+                    Text(settings.localized("1 天")).tag(1)
+                    Text(settings.localized("7 天")).tag(7)
+                    Text(settings.localized("30 天")).tag(30)
+                    Text(settings.localized("90 天")).tag(90)
+                    Text(settings.localized("1 年")).tag(365)
                 }
 
-                Picker("最大条数", selection: $settings.maximumItemCount) {
+                Picker(settings.localized("最大条数"), selection: $settings.maximumItemCount) {
                     Text("100").tag(100)
                     Text("500").tag(500)
                     Text("1,000").tag(1_000)
                     Text("5,000").tag(5_000)
                     Text("10,000").tag(10_000)
                 }
+            }
+
+            Section(settings.localized("语言")) {
+                Picker(settings.localized("界面语言"), selection: $settings.appLanguage) {
+                    ForEach(AppLanguage.allCases) { language in
+                        Text(language.displayName(in: settings.appLanguage)).tag(language)
+                    }
+                }
+                Text(settings.localized("语言切换会立即应用"))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
         }
         .formStyle(.grouped)
@@ -121,10 +136,10 @@ private struct PrivacySettingsPane: View {
 
     var body: some View {
         Form {
-            Section("访问状态") {
+            Section(settings.localized("访问状态")) {
                 HStack(alignment: .center, spacing: 12) {
                     StatusRow(
-                        title: "剪贴板",
+                        title: settings.localized("剪贴板"),
                         detail: settings.clipboardAccessSummary,
                         isReady: settings.isPasteboardAccessReady,
                         symbol: "clipboard"
@@ -134,7 +149,7 @@ private struct PrivacySettingsPane: View {
 
                     if !settings.isPasteboardAccessReady
                         || settings.pasteboardAccessStatus.needsAlwaysAllowEducation {
-                        Button("打开系统设置") {
+                        Button(settings.localized("打开系统设置")) {
                             settings.openPrivacySettings()
                         }
                     }
@@ -142,8 +157,10 @@ private struct PrivacySettingsPane: View {
 
                 HStack(alignment: .center, spacing: 12) {
                     StatusRow(
-                        title: "辅助功能",
-                        detail: settings.isAccessibilityTrusted ? "已允许自动粘贴" : "未授权 · 当前仅复制",
+                        title: settings.localized("辅助功能"),
+                        detail: settings.localized(
+                            settings.isAccessibilityTrusted ? "已允许自动粘贴" : "未授权 · 当前仅复制"
+                        ),
                         isReady: settings.isAccessibilityTrusted,
                         symbol: "accessibility"
                     )
@@ -151,11 +168,11 @@ private struct PrivacySettingsPane: View {
                     Spacer()
 
                     if !settings.isAccessibilityTrusted {
-                        Button("请求权限") {
+                        Button(settings.localized("请求权限")) {
                             settings.requestAccessibilityAccess()
                         }
                     } else {
-                        Button("刷新") {
+                        Button(settings.localized("刷新")) {
                             settings.refreshAccessibilityStatus()
                         }
                     }
@@ -168,19 +185,19 @@ private struct PrivacySettingsPane: View {
                     .frame(minHeight: 118)
                     .padding(6)
                     .background(.quaternary.opacity(0.45), in: RoundedRectangle(cornerRadius: 8))
-                    .accessibilityLabel("排除的应用 Bundle ID，每行一个")
+                    .accessibilityLabel(settings.localized("排除的应用 Bundle ID，每行一个"))
 
                 HStack {
-                    Text("每行一个 Bundle ID；编辑后会自动保存。")
+                    Text(settings.localized("每行一个 Bundle ID；编辑后会自动保存。"))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     Spacer()
-                    Button("恢复默认") {
+                    Button(settings.localized("恢复默认")) {
                         settings.restoreDefaultExcludedBundleIdentifiers()
                     }
                 }
             } header: {
-                Text("排除应用")
+                Text(settings.localized("排除应用"))
             }
         }
         .formStyle(.grouped)
@@ -205,11 +222,13 @@ private struct StorageSettingsPane: View {
 
     var body: some View {
         Form {
-            Section("本地数据") {
+            Section(settings.localized("本地数据")) {
                 if let storageError = settings.storageErrorDescription {
                     Label {
                         VStack(alignment: .leading, spacing: 3) {
-                            Text(settings.isStorageReadOnly ? "历史已进入只读保护" : "最近一次保存失败")
+                            Text(settings.localized(
+                                settings.isStorageReadOnly ? "历史已进入只读保护" : "最近一次保存失败"
+                            ))
                                 .font(.callout.weight(.semibold))
                             Text(storageError)
                                 .font(.caption)
@@ -222,7 +241,7 @@ private struct StorageSettingsPane: View {
                     }
                 }
 
-                LabeledContent("位置") {
+                LabeledContent(settings.localized("位置")) {
                     Text(settings.dataDirectory.path)
                         .font(.system(.caption, design: .monospaced))
                         .foregroundStyle(.secondary)
@@ -232,11 +251,11 @@ private struct StorageSettingsPane: View {
                 }
 
                 HStack {
-                    Text("历史数据库与图片仅保存在这台 Mac 上。")
+                    Text(settings.localized("历史数据库与图片仅保存在这台 Mac 上。"))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     Spacer()
-                    Button("在 Finder 中显示") {
+                    Button(settings.localized("在 Finder 中显示")) {
                         revealDataDirectory()
                     }
                 }
@@ -245,34 +264,34 @@ private struct StorageSettingsPane: View {
             Section {
                 HStack {
                     VStack(alignment: .leading, spacing: 3) {
-                        Text("清除未置顶历史")
-                        Text("保留你主动置顶的常用片段")
+                        Text(settings.localized("清除未置顶历史"))
+                        Text(settings.localized("保留你主动置顶的常用片段"))
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
                     Spacer()
-                    Button("清除…") { pendingClearAction = .unpinned }
+                    Button(settings.localized("清除…")) { pendingClearAction = .unpinned }
                         .disabled(settings.isStorageReadOnly)
                 }
 
                 HStack {
                     VStack(alignment: .leading, spacing: 3) {
-                        Text("清除所有本地数据")
-                        Text("包括置顶项；此操作不可撤销")
+                        Text(settings.localized("清除所有本地数据"))
+                        Text(settings.localized("包括置顶项；此操作不可撤销"))
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
                     Spacer()
-                    Button("全部清除…", role: .destructive) { pendingClearAction = .all }
+                    Button(settings.localized("全部清除…"), role: .destructive) { pendingClearAction = .all }
                         .disabled(settings.isStorageReadOnly)
                 }
             } header: {
-                Text("清理")
+                Text(settings.localized("清理"))
             }
 
             Section {
                 Label {
-                    Text("TuckClip 不包含账号、云同步、遥测或网络上传。")
+                    Text(settings.localized("TuckClip 不包含账号、云同步、遥测或网络上传。"))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 } icon: {
@@ -285,9 +304,9 @@ private struct StorageSettingsPane: View {
         .padding(14)
         .alert(item: $pendingClearAction) { action in
             Alert(
-                title: Text(action.title),
-                message: Text(action.message),
-                primaryButton: .destructive(Text("清除")) {
+                title: Text(settings.localized(action.title)),
+                message: Text(settings.localized(action.message)),
+                primaryButton: .destructive(Text(settings.localized("清除"))) {
                     switch action {
                     case .unpinned: panelViewModel.clearUnpinned()
                     case .all: panelViewModel.clearAll()

@@ -34,6 +34,8 @@ internal sealed class AppCoordinator : IClipboardUiActions, IPanelSessionBoundar
     private TrayIcon? _trayIcon;
     private NativeMenuItem? _recordingMenuItem;
     private NativeMenuItem? _openMenuItem;
+    private NativeMenuItem? _settingsMenuItem;
+    private NativeMenuItem? _quitMenuItem;
     private PastePanelSession? _panelSession;
     private CancellationTokenSource? _pasteCancellation;
     private string? _deferredNotice;
@@ -91,13 +93,19 @@ internal sealed class AppCoordinator : IClipboardUiActions, IPanelSessionBoundar
             catch (WindowsSettingsCorruptedException exception)
             {
                 _settings = WindowsAppSettings.PrivacySafeRecovery;
-                _storageError = exception.Message;
-                const string recoveryNotice =
-                    "设置读取失败，已暂停记录并关闭自动粘贴；原文件尚未被改写。";
+                _storageError = AppLocalization.Text(
+                    "本地设置文件损坏或无效；原文件没有被改写。");
+                System.Diagnostics.Trace.TraceWarning(
+                    "TuckClip settings recovery: {0}",
+                    exception.Message);
+                var recoveryNotice = AppLocalization.Text(
+                    "设置读取失败，已暂停记录并关闭自动粘贴；原文件尚未被改写。");
                 _deferredNotice = string.IsNullOrWhiteSpace(_deferredNotice)
                     ? recoveryNotice
                     : string.Join(Environment.NewLine, recoveryNotice, _deferredNotice);
             }
+
+            AppLocalization.Apply(_settings.AppLanguage);
 
             _nativeApi = new WindowsNativeApi();
             _messageHost = new WindowsMessageHost();
@@ -107,7 +115,9 @@ internal sealed class AppCoordinator : IClipboardUiActions, IPanelSessionBoundar
             var startupWarnings = _messageHost.Start(_nativeApi, _settings.GlobalHotKey);
             if (_messageHost.ActiveHotKey is null)
             {
-                _hotKeyError = $"{_settings.GlobalHotKey.DisplayText} 注册失败，请录入其他组合键。";
+                _hotKeyError = AppLocalization.Format(
+                    "{0} 注册失败，请录入其他组合键。",
+                    _settings.GlobalHotKey.DisplayText);
             }
             if (startupWarnings.Count > 0)
             {
@@ -143,7 +153,7 @@ internal sealed class AppCoordinator : IClipboardUiActions, IPanelSessionBoundar
             RefreshSettingsView();
             RefreshCaptureState(_messageHost.IsClipboardMonitoringAvailable
                 ? null
-                : "剪贴板监听未能启动");
+                : AppLocalization.Text("剪贴板监听未能启动"));
             if (_showPanelWhenReady)
             {
                 _showPanelWhenReady = false;
@@ -166,7 +176,7 @@ internal sealed class AppCoordinator : IClipboardUiActions, IPanelSessionBoundar
         var item = history.Items.FirstOrDefault(candidate => candidate.Id == itemId);
         if (item is null)
         {
-            ShowNotice("这条记录已不存在。", PanelNoticeKind.Error);
+            ShowNotice(AppLocalization.Text("这条记录已不存在。"), PanelNoticeKind.Error);
             RefreshHistoryView();
             return;
         }
@@ -192,19 +202,19 @@ internal sealed class AppCoordinator : IClipboardUiActions, IPanelSessionBoundar
                     ? new HistoryMutationResult(HistoryMutationStatus.NotFound)
                     : await history.SetPinnedAsync(itemId, !item.IsPinned, DateTimeOffset.UtcNow, token);
             },
-            "置顶状态未能保存。"));
+            AppLocalization.Text("置顶状态未能保存。")));
 
     public void DeleteItem(Guid itemId) =>
         TrackBackgroundTask(RunHistoryMutationAsync(
             (history, token) => history.DeleteAsync(itemId, token),
-            "这条记录未能删除。"));
+            AppLocalization.Text("这条记录未能删除。")));
 
     public void ClearHistory(ClearHistoryScope scope) =>
         TrackBackgroundTask(RunHistoryMutationAsync(
             (history, token) => scope == ClearHistoryScope.All
                 ? history.ClearAllAsync(token)
                 : history.ClearUnpinnedAsync(token),
-            "历史记录未能清除。"));
+            AppLocalization.Text("历史记录未能清除。")));
 
     public void ApplySettings(ClipboardSettingsDraft settings)
     {
@@ -221,11 +231,12 @@ internal sealed class AppCoordinator : IClipboardUiActions, IPanelSessionBoundar
                 MaximumItemCount = settings.MaximumItemCount,
                 ExcludedProcessNames = settings.ExcludedProcessNames,
                 GlobalHotKey = _settings.GlobalHotKey,
+                AppLanguage = settings.AppLanguage,
             }.Validate();
         }
         catch (ArgumentException exception)
         {
-            ShowNotice(exception.Message, PanelNoticeKind.Error);
+            ShowNotice(LocalizeSettingsValidation(exception), PanelNoticeKind.Error);
             RefreshSettingsView();
             return;
         }
@@ -249,11 +260,12 @@ internal sealed class AppCoordinator : IClipboardUiActions, IPanelSessionBoundar
                 MaximumItemCount = settings.MaximumItemCount,
                 ExcludedProcessNames = settings.ExcludedProcessNames,
                 GlobalHotKey = hotKey,
+                AppLanguage = settings.AppLanguage,
             }.Validate();
         }
         catch (ArgumentException exception)
         {
-            _hotKeyError = exception.Message;
+            _hotKeyError = LocalizeSettingsValidation(exception);
             RefreshSettingsView();
             return;
         }
@@ -516,12 +528,14 @@ internal sealed class AppCoordinator : IClipboardUiActions, IPanelSessionBoundar
         catch (ClipboardWriteConflictException)
         {
             ShowNotice(
-                "系统剪贴板在写入确认期间又发生变化；为避免误粘贴，已停止，请重试。",
+                AppLocalization.Text("系统剪贴板在写入确认期间又发生变化；为避免误粘贴，已停止，请重试。"),
                 PanelNoticeKind.Error);
         }
         catch (Exception exception) when (exception is IOException or InvalidOperationException)
         {
-            ShowNotice($"复制失败：{exception.Message}", PanelNoticeKind.Error);
+            ShowNotice(
+                AppLocalization.Format("复制失败：{0}", exception.Message),
+                PanelNoticeKind.Error);
         }
     }
 
@@ -557,7 +571,7 @@ internal sealed class AppCoordinator : IClipboardUiActions, IPanelSessionBoundar
                 try
                 {
                     hotKeyChange = (_messageHost ?? throw new InvalidOperationException(
-                        "快捷键服务尚未启动。"))
+                        AppLocalization.Text("快捷键服务尚未启动。")))
                         .StageHotKey(candidate.GlobalHotKey);
                 }
                 catch (Exception exception) when (exception is
@@ -566,7 +580,9 @@ internal sealed class AppCoordinator : IClipboardUiActions, IPanelSessionBoundar
                     ArgumentException)
                 {
                     var message = exception is System.ComponentModel.Win32Exception
-                        ? $"{candidate.GlobalHotKey.DisplayText} 已被系统或其他应用占用。"
+                        ? AppLocalization.Format(
+                            "{0} 已被系统或其他应用占用。",
+                            candidate.GlobalHotKey.DisplayText)
                         : exception.Message;
                     _hotKeyError = message;
                     ShowNotice(message, PanelNoticeKind.Error);
@@ -586,7 +602,9 @@ internal sealed class AppCoordinator : IClipboardUiActions, IPanelSessionBoundar
                 }
                 catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
                 {
-                    _storageError = $"设置未能写入磁盘：{exception.Message}";
+                    _storageError = AppLocalization.Format(
+                        "设置未能写入磁盘：{0}",
+                        exception.Message);
                     ShowNotice(_storageError, PanelNoticeKind.Error);
                     RefreshSettingsView();
                     return;
@@ -596,11 +614,12 @@ internal sealed class AppCoordinator : IClipboardUiActions, IPanelSessionBoundar
             }
 
             _settings = candidate;
+            AppLocalization.Apply(candidate.AppLanguage);
             _hotKeyError = null;
             var newCore = candidate.ToCoreSettings();
             await _historyStore.ApplySettingsAsync(newCore, _lifetimeCancellation.Token);
             _storageError = _historyStore.IsReadOnly
-                ? "历史文件损坏，已进入只读保护；原文件没有被覆盖。"
+                ? AppLocalization.Text("历史文件损坏，已进入只读保护；原文件没有被覆盖。")
                 : null;
 
             // A newer queued candidate owns the visible state. Keep the last
@@ -613,6 +632,7 @@ internal sealed class AppCoordinator : IClipboardUiActions, IPanelSessionBoundar
 
             RefreshCaptureState();
             RefreshTrayMenu();
+            RefreshHistoryView();
             RefreshSettingsView();
         }
         catch (OperationCanceledException) when (_lifetimeCancellation.IsCancellationRequested)
@@ -656,12 +676,14 @@ internal sealed class AppCoordinator : IClipboardUiActions, IPanelSessionBoundar
                 new Uri(Path.GetFullPath(dataDirectory)));
             if (folder is null || !await host.Launcher.LaunchFileAsync(folder))
             {
-                ShowNotice("无法打开数据目录。", PanelNoticeKind.Error);
+                ShowNotice(AppLocalization.Text("无法打开数据目录。"), PanelNoticeKind.Error);
             }
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
-            ShowNotice($"无法打开数据目录：{exception.Message}", PanelNoticeKind.Error);
+            ShowNotice(
+                AppLocalization.Format("无法打开数据目录：{0}", exception.Message),
+                PanelNoticeKind.Error);
         }
     }
 
@@ -705,11 +727,11 @@ internal sealed class AppCoordinator : IClipboardUiActions, IPanelSessionBoundar
                     var result = await _historyStore.CaptureAsync(capture, _lifetimeCancellation.Token);
                     if (result.Status == HistoryMutationStatus.PersistenceFailed)
                     {
-                        ShowNotice("剪贴板记录未能写入磁盘。", PanelNoticeKind.Error);
+                        ShowNotice(AppLocalization.Text("剪贴板记录未能写入磁盘。"), PanelNoticeKind.Error);
                     }
                     else if (result.Status == HistoryMutationStatus.ReadOnly)
                     {
-                        RefreshCaptureState("历史文件处于只读保护状态");
+                        RefreshCaptureState(AppLocalization.Text("历史文件处于只读保护状态"));
                     }
                 }
                 catch (OperationCanceledException) when (_lifetimeCancellation.IsCancellationRequested)
@@ -718,7 +740,9 @@ internal sealed class AppCoordinator : IClipboardUiActions, IPanelSessionBoundar
                 }
                 catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
                 {
-                    ShowNotice($"读取剪贴板失败：{exception.Message}", PanelNoticeKind.Error);
+                    ShowNotice(
+                        AppLocalization.Format("读取剪贴板失败：{0}", exception.Message),
+                        PanelNoticeKind.Error);
                 }
             }
         }
@@ -853,20 +877,20 @@ internal sealed class AppCoordinator : IClipboardUiActions, IPanelSessionBoundar
         _openMenuItem.Click += (_, _) => ShowPanel(capturePasteTarget: false);
         _recordingMenuItem = new NativeMenuItem();
         _recordingMenuItem.Click += (_, _) => ToggleRecordingFromTray();
-        var settingsItem = new NativeMenuItem("设置…");
-        settingsItem.Click += (_, _) => ShowSettings();
-        var quitItem = new NativeMenuItem("退出 TuckClip");
-        quitItem.Click += (_, _) => _requestShutdown();
+        _settingsMenuItem = new NativeMenuItem();
+        _settingsMenuItem.Click += (_, _) => ShowSettings();
+        _quitMenuItem = new NativeMenuItem();
+        _quitMenuItem.Click += (_, _) => _requestShutdown();
         menu.Add(_openMenuItem);
         menu.Add(_recordingMenuItem);
-        menu.Add(settingsItem);
+        menu.Add(_settingsMenuItem);
         menu.Add(new NativeMenuItemSeparator());
-        menu.Add(quitItem);
+        menu.Add(_quitMenuItem);
 
         _trayIcon = new TrayIcon
         {
             Icon = new WindowIcon(iconStream),
-            ToolTipText = "TuckClip · 本地剪贴板历史",
+            ToolTipText = AppLocalization.Text("TuckClip · 本地剪贴板历史"),
             Menu = menu,
             IsVisible = true,
         };
@@ -882,18 +906,30 @@ internal sealed class AppCoordinator : IClipboardUiActions, IPanelSessionBoundar
             _settings.CapturesImages,
             _settings.RetentionDays,
             _settings.MaximumItemCount,
-            _settings.ExcludedProcessNames));
+            _settings.ExcludedProcessNames,
+            _settings.AppLanguage));
     }
 
     private void RefreshTrayMenu()
     {
         if (_recordingMenuItem is not null)
         {
-            _recordingMenuItem.Header = _settings.RecordingEnabled ? "暂停记录" : "继续记录";
+            _recordingMenuItem.Header = AppLocalization.Text(
+                _settings.RecordingEnabled ? "暂停记录" : "继续记录");
         }
         if (_openMenuItem is not null)
         {
-            _openMenuItem.Header = $"打开 TuckClip（{_settings.GlobalHotKey.DisplayText}）";
+            _openMenuItem.Header = AppLocalization.Format(
+                "打开 TuckClip（{0}）",
+                _settings.GlobalHotKey.DisplayText);
+        }
+        if (_settingsMenuItem is not null)
+        {
+            _settingsMenuItem.Header = AppLocalization.Text("设置…");
+        }
+        if (_quitMenuItem is not null)
+        {
+            _quitMenuItem.Header = AppLocalization.Text("退出 TuckClip");
         }
         if (_trayIcon is not null)
         {
@@ -911,6 +947,7 @@ internal sealed class AppCoordinator : IClipboardUiActions, IPanelSessionBoundar
         var viewModels = _historyStore.Items.Select(CreateCardViewModel).ToArray();
         _mainWindow.ViewModel.ReplaceItems(viewModels);
         _mainWindow.ViewModel.UpdateGlobalHotKey(_settings.GlobalHotKey.DisplayText);
+        _mainWindow.ViewModel.RefreshLocalization();
     }
 
     private void RefreshSettingsView()
@@ -930,10 +967,12 @@ internal sealed class AppCoordinator : IClipboardUiActions, IPanelSessionBoundar
             _settingsStore.DataDirectory,
             _historyStore.IsReadOnly,
             _storageError ?? (_historyStore.IsReadOnly
-                ? "历史文件损坏，已进入只读保护；原文件没有被覆盖。"
+                ? AppLocalization.Text("历史文件损坏，已进入只读保护；原文件没有被覆盖。")
                 : null),
             _settings.GlobalHotKey,
-            _hotKeyError));
+            _hotKeyError,
+            _settings.AppLanguage));
+        _settingsWindow.ViewModel.RefreshLocalization(_settings.AppLanguage);
     }
 
     private void RefreshCaptureState(string? detail = null)
@@ -993,10 +1032,10 @@ internal sealed class AppCoordinator : IClipboardUiActions, IPanelSessionBoundar
         {
             ClipKind.Text => FirstDisplayLine(item.PlainText, 120),
             ClipKind.Link => Truncate(item.PlainText ?? string.Empty, 160),
-            ClipKind.Image => "图片",
+            ClipKind.Image => AppLocalization.Text("图片"),
             ClipKind.Files => item.FilePaths.Count == 1
                 ? Path.GetFileName(item.FilePaths[0]) ?? string.Empty
-                : $"{item.FilePaths.Count} 个文件",
+                : AppLocalization.Format("{0} 个文件", item.FilePaths.Count),
             _ => string.Empty,
         };
         var detail = item.Kind switch
@@ -1005,7 +1044,9 @@ internal sealed class AppCoordinator : IClipboardUiActions, IPanelSessionBoundar
             ClipKind.Link => item.PlainText is { } link && Uri.TryCreate(link, UriKind.Absolute, out var uri)
                 ? uri.Host
                 : string.Empty,
-            ClipKind.Image => item.ImageData is { } image ? FormatByteCount(image.Length) : "图片数据不可用",
+            ClipKind.Image => item.ImageData is { } image
+                ? FormatByteCount(image.Length)
+                : AppLocalization.Text("图片数据不可用"),
             ClipKind.Files => string.Join(Environment.NewLine, item.FilePaths.Take(3)),
             _ => string.Empty,
         };
@@ -1049,13 +1090,30 @@ internal sealed class AppCoordinator : IClipboardUiActions, IPanelSessionBoundar
 
     private static string GetPasteFailureMessage(PasteFailureReason reason) => reason switch
     {
-        PasteFailureReason.TargetWindowUnavailable => "已复制，但系统没有把焦点交回原窗口；请手动按 Ctrl+V。",
+        PasteFailureReason.TargetWindowUnavailable => AppLocalization.Text("已复制，但系统没有把焦点交回原窗口；请手动按 Ctrl+V。"),
         PasteFailureReason.ClipboardChanged =>
-            "已复制，但在发送 Ctrl+V 前系统剪贴板又发生变化；为避免粘贴错误内容，已取消自动粘贴。",
-        PasteFailureReason.ModifierKeysPressed => "已复制，但检测到仍按住修饰键；请松开后手动按 Ctrl+V。",
-        PasteFailureReason.InputRejected => "已复制，但目标窗口拒绝自动粘贴；管理员应用需要手动按 Ctrl+V。",
-        _ => "已复制，但自动粘贴未完成；请手动按 Ctrl+V。",
+            AppLocalization.Text("已复制，但在发送 Ctrl+V 前系统剪贴板又发生变化；为避免粘贴错误内容，已取消自动粘贴。"),
+        PasteFailureReason.ModifierKeysPressed => AppLocalization.Text("已复制，但检测到仍按住修饰键；请松开后手动按 Ctrl+V。"),
+        PasteFailureReason.InputRejected => AppLocalization.Text("已复制，但目标窗口拒绝自动粘贴；管理员应用需要手动按 Ctrl+V。"),
+        _ => AppLocalization.Text("已复制，但自动粘贴未完成；请手动按 Ctrl+V。"),
     };
+
+    private static string LocalizeSettingsValidation(ArgumentException exception) =>
+        exception.ParamName switch
+        {
+            nameof(TuckClip.Core.AppSettings.MaximumItemCount) =>
+                AppLocalization.Text("最大条数必须在 1 到 10000 之间。"),
+            nameof(TuckClip.Core.AppSettings.RetentionDays) =>
+                AppLocalization.Text("保留期必须在 0 到 3650 天之间。"),
+            nameof(WindowsAppSettings.ExcludedProcessNames) =>
+                AppLocalization.Text("最多支持 256 个排除进程。"),
+            "value" => AppLocalization.Text("单个排除进程名不能超过 260 个字符。"),
+            nameof(GlobalHotKey.Modifiers) => AppLocalization.Text(
+                "快捷键必须包含 Ctrl、Alt、Shift 或 Win 中的至少一个修饰键。"),
+            nameof(GlobalHotKey.VirtualKey) =>
+                AppLocalization.Text("快捷键还需要一个非修饰键。"),
+            _ => AppLocalization.Text("设置值无效，请检查后重试。"),
+        };
 
     private static PasteTargetWindow CapturePasteTarget(WindowsNativeApi nativeApi)
     {

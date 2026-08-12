@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using Avalonia;
 using Avalonia.Media;
 using Avalonia.Threading;
+using TuckClip.Windows.Services;
 
 namespace TuckClip.Windows.ViewModels;
 
@@ -40,11 +41,12 @@ public sealed class ClipboardPanelViewModel : ObservableObject, IDisposable
     private string _searchText = string.Empty;
     private ClipTypeFilter _selectedFilter;
     private ClipCardViewModel? _selectedItem;
-    private string _statusText = "记录中";
+    private string _statusText = AppLocalization.Text("记录中");
     private IBrush _statusBrush = RecordingBrush;
     private string? _noticeText;
     private PanelNoticeKind _noticeKind;
     private string _globalHotKeyDisplayText = "Ctrl+Alt+V";
+    private ClipboardCaptureState _captureState = new(CaptureStateKind.Recording);
 
     public ClipboardPanelViewModel(IClipboardUiActions? actions = null)
     {
@@ -139,13 +141,16 @@ public sealed class ClipboardPanelViewModel : ObservableObject, IDisposable
 
     public bool IsEmpty => !HasItems;
 
-    public string ResultCountText => $"{_filteredItems.Count} 项";
+    public string ResultCountText => AppLocalization.Format("{0} 项", _filteredItems.Count);
 
-    public string EmptyTitle => HasSearch ? "没有找到匹配内容" : "等待你的下一次复制";
+    public string EmptyTitle => AppLocalization.Text(
+        HasSearch ? "没有找到匹配内容" : "等待你的下一次复制");
 
     public string EmptyDetail => HasSearch
-        ? "试试缩短关键词或切换类型筛选"
-        : $"复制文本、链接、图片或文件；按 {GlobalHotKeyDisplayText} 随时回来";
+        ? AppLocalization.Text("试试缩短关键词或切换类型筛选")
+        : AppLocalization.Format(
+            "复制文本、链接、图片或文件；按 {0} 随时回来",
+            GlobalHotKeyDisplayText);
 
     public string GlobalHotKeyDisplayText
     {
@@ -316,22 +321,8 @@ public sealed class ClipboardPanelViewModel : ObservableObject, IDisposable
         ArgumentNullException.ThrowIfNull(state);
         RunOnUiThread(() =>
         {
-            StatusText = state.Detail ?? state.Kind switch
-            {
-                CaptureStateKind.Recording => "记录中",
-                CaptureStateKind.Paused => "已暂停",
-                CaptureStateKind.PermissionRequired => "需要剪贴板权限",
-                CaptureStateKind.StorageReadOnly => "存储受保护",
-                CaptureStateKind.Error => "记录异常",
-                _ => "状态未知",
-            };
-
-            StatusBrush = state.Kind switch
-            {
-                CaptureStateKind.Recording => RecordingBrush,
-                CaptureStateKind.Paused => PausedBrush,
-                _ => WarningBrush,
-            };
+            _captureState = state;
+            ApplyCaptureState(state);
         });
     }
 
@@ -339,6 +330,41 @@ public sealed class ClipboardPanelViewModel : ObservableObject, IDisposable
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(displayText);
         RunOnUiThread(() => GlobalHotKeyDisplayText = displayText);
+    }
+
+    public void RefreshLocalization()
+    {
+        RunOnUiThread(() =>
+        {
+            ApplyCaptureState(_captureState);
+            OnPropertyChanged(nameof(ResultCountText));
+            OnPropertyChanged(nameof(EmptyTitle));
+            OnPropertyChanged(nameof(EmptyDetail));
+            foreach (var item in _items)
+            {
+                item.RefreshLocalization();
+            }
+        });
+    }
+
+    private void ApplyCaptureState(ClipboardCaptureState state)
+    {
+        StatusText = state.Detail ?? state.Kind switch
+        {
+            CaptureStateKind.Recording => AppLocalization.Text("记录中"),
+            CaptureStateKind.Paused => AppLocalization.Text("已暂停"),
+            CaptureStateKind.PermissionRequired => AppLocalization.Text("需要剪贴板权限"),
+            CaptureStateKind.StorageReadOnly => AppLocalization.Text("存储受保护"),
+            CaptureStateKind.Error => AppLocalization.Text("记录异常"),
+            _ => AppLocalization.Text("状态未知"),
+        };
+
+        StatusBrush = state.Kind switch
+        {
+            CaptureStateKind.Recording => RecordingBrush,
+            CaptureStateKind.Paused => PausedBrush,
+            _ => WarningBrush,
+        };
     }
 
     public void ShowNotice(string message, PanelNoticeKind kind = PanelNoticeKind.Information)

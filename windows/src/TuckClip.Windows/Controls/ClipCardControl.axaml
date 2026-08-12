@@ -14,14 +14,14 @@
       ToolTip.Tip="{Binding AccessibilitySummary}">
     <Button.ContextMenu>
       <ContextMenu>
-        <MenuItem Header="粘贴" Click="OnPasteMenuClick" />
+        <MenuItem Header="{DynamicResource 粘贴}" Click="OnPasteMenuClick" />
         <MenuItem
-            Header="以纯文本粘贴"
+            Header="{DynamicResource 以纯文本粘贴}"
             IsVisible="{Binding SupportsPlainTextPaste}"
             Click="OnPlainTextMenuClick" />
         <Separator />
         <MenuItem Header="{Binding PinLabel}" Click="OnTogglePinMenuClick" />
-        <MenuItem Header="删除" Click="OnDeleteMenuClick" />
+        <MenuItem Header="{DynamicResource 删除}" Click="OnDeleteMenuClick" />
       </ContextMenu>
     </Button.ContextMenu>
 
@@ -72,7 +72,7 @@
               Foreground="#FF31D1EA"
               IsVisible="{Binding IsPinned}"
               Text="◆"
-              ToolTip.Tip="已置顶" />
+              ToolTip.Tip="{DynamicResource 已置顶}" />
         </Grid>
 
         <Grid Grid.Row="1" Margin="0,10,0,9">
@@ -119,7 +119,7 @@
                     x:Name="PreviewStatusText"
                     FontSize="11"
                     Foreground="#80FFFFFF"
-                    Text="图片预览不可用" />
+                    Text="{DynamicResource 图片预览不可用}" />
               </StackPanel>
             </Grid>
           </Border>
