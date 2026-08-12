@@ -154,9 +154,10 @@ final class ClipboardStoreTests: XCTestCase {
         )
 
         XCTAssertTrue(store.isReadOnlyDueToLoadFailure)
-        XCTAssertTrue(
-            store.persistenceErrorDescription?.hasPrefix("无法读取剪贴板历史") == true
-        )
+        let readErrorPrefix = L10n.text(
+            "无法读取剪贴板历史。为保护现有数据，TuckClip 已进入只读模式：%@"
+        ).replacingOccurrences(of: "%@", with: "")
+        XCTAssertTrue(store.persistenceErrorDescription?.hasPrefix(readErrorPrefix) == true)
         XCTAssertTrue(store.items.isEmpty)
 
         XCTAssertNil(store.ingest(capture(
@@ -208,9 +209,10 @@ final class ClipboardStoreTests: XCTestCase {
 
         XCTAssertEqual(store.items, originalItems)
         XCTAssertEqual(store.selectedID, image.id)
-        XCTAssertTrue(
-            store.persistenceErrorDescription?.hasPrefix("无法保存剪贴板历史") == true
-        )
+        let saveErrorPrefix = L10n.text(
+            "无法保存剪贴板历史：%@"
+        ).replacingOccurrences(of: "%@", with: "")
+        XCTAssertTrue(store.persistenceErrorDescription?.hasPrefix(saveErrorPrefix) == true)
         XCTAssertNotNil(store.imageURL(for: image))
 
         try fileManager.removeItem(at: repository.historyURL)
