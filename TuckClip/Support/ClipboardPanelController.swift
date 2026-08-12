@@ -93,8 +93,8 @@ final class ClipboardPanelController: NSObject, NSWindowDelegate {
             NSAnimationContext.runAnimationGroup { context in
                 context.duration = 0.17
                 context.timingFunction = CAMediaTimingFunction(name: .easeOut)
-                panel.animator().setFrame(destinationFrame, display: true)
-                panel.animator().alphaValue = 1
+                self.panel.animator().setFrame(destinationFrame, display: true)
+                self.panel.animator().alphaValue = 1
             }
         }
     }
@@ -125,10 +125,10 @@ final class ClipboardPanelController: NSObject, NSWindowDelegate {
         } completionHandler: { [weak self] in
             Task { @MainActor [weak self] in
                 guard let self else { return }
-                panel.orderOut(nil)
-                panel.alphaValue = 1
+                self.panel.orderOut(nil)
+                self.panel.alphaValue = 1
                 if restorePreviousApplication {
-                    onCancel?()
+                    self.onCancel?()
                 }
             }
         }
