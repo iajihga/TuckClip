@@ -48,8 +48,16 @@ CHECKSUM_PATH="${DMG_PATH}.sha256"
 STAGING_DIR="$(mktemp -d "${TMPDIR:-/tmp}/tuckclip-dmg.XXXXXX")"
 MOUNT_DIR="$(mktemp -d "${TMPDIR:-/tmp}/tuckclip-mount.XXXXXX")"
 DMG_ATTACHED="false"
+SMOKE_PID=""
+SMOKE_LOG="${STAGING_DIR}/launch-smoke.log"
+SMOKE_HOME="${STAGING_DIR}/launch-home"
 
 cleanup() {
+  if [[ -n "${SMOKE_PID}" ]] && kill -0 "${SMOKE_PID}" >/dev/null 2>&1; then
+    kill "${SMOKE_PID}" >/dev/null 2>&1 || true
+    wait "${SMOKE_PID}" >/dev/null 2>&1 || true
+    SMOKE_PID=""
+  fi
   if [[ "${DMG_ATTACHED}" == "true" ]]; then
     if hdiutil detach "${MOUNT_DIR}" >/dev/null 2>&1; then
       DMG_ATTACHED="false"
@@ -78,9 +86,11 @@ xcodebuild \
   ONLY_ACTIVE_ARCH=NO \
   MARKETING_VERSION="${BUNDLE_VERSION}" \
   CURRENT_PROJECT_VERSION="${BUILD_NUMBER}" \
+  CLANG_COVERAGE_MAPPING=NO \
   CODE_SIGN_IDENTITY=- \
   CODE_SIGN_STYLE=Manual \
   CODE_SIGN_INJECT_BASE_ENTITLEMENTS=NO \
+  ENABLE_CODE_COVERAGE=NO \
   DEVELOPMENT_TEAM= \
   clean build
 
@@ -103,6 +113,11 @@ if [[ "${FILE_DESCRIPTION}" != *"${ARCHITECTURE}"* ]]; then
 fi
 print -- "${FILE_DESCRIPTION}"
 
+if nm "${EXECUTABLE_PATH}" | awk '/___llvm_profile_/ { found = 1 } END { exit(found ? 0 : 1) }'; then
+  print -u2 "Release executable unexpectedly contains code-coverage instrumentation."
+  exit 1
+fi
+
 codesign --verify --deep --strict "${SOURCE_APP}"
 
 SIGNATURE_DESCRIPTION="$(codesign -dv --verbose=4 "${SOURCE_APP}" 2>&1)"
@@ -122,6 +137,10 @@ fi
 ENTITLEMENTS="$(codesign -d --entitlements :- "${SOURCE_APP}" 2>/dev/null)"
 if [[ "${ENTITLEMENTS}" == *"com.apple.security.get-task-allow"* ]]; then
   print -u2 "Release app unexpectedly contains com.apple.security.get-task-allow."
+  exit 1
+fi
+if [[ "${ENTITLEMENTS}" != *"<key>com.apple.security.cs.disable-library-validation</key><true/>"* ]]; then
+  print -u2 "Ad-hoc Release app must explicitly disable library validation so its embedded Sparkle framework can load."
   exit 1
 fi
 
@@ -178,6 +197,48 @@ if [[ "${MOUNTED_ARCHITECTURES}" != "${ARCHITECTURE}" ]]; then
 fi
 
 codesign --verify --deep --strict "${MOUNT_DIR}/TuckClip.app"
+
+MOUNTED_ENTITLEMENTS="$(codesign -d --entitlements :- "${MOUNT_DIR}/TuckClip.app" 2>/dev/null)"
+if [[ "${MOUNTED_ENTITLEMENTS}" != *"<key>com.apple.security.cs.disable-library-validation</key><true/>"* ]]; then
+  print -u2 "Packaged app lost the required library-validation entitlement."
+  exit 1
+fi
+
+mkdir -p "${SMOKE_HOME}/Library/Application Support" "${SMOKE_HOME}/tmp"
+HOME="${SMOKE_HOME}" \
+  CFFIXED_USER_HOME="${SMOKE_HOME}" \
+  TMPDIR="${SMOKE_HOME}/tmp" \
+  "${MOUNT_DIR}/TuckClip.app/Contents/MacOS/TuckClip" \
+    >"${SMOKE_LOG}" 2>&1 &
+SMOKE_PID="$!"
+
+for _ in {1..30}; do
+  if ! kill -0 "${SMOKE_PID}" >/dev/null 2>&1; then
+    set +e
+    wait "${SMOKE_PID}"
+    SMOKE_STATUS="$?"
+    set -e
+    SMOKE_PID=""
+    print -u2 "Packaged app exited during the launch smoke test (status ${SMOKE_STATUS})."
+    if [[ -s "${SMOKE_LOG}" ]]; then
+      print -u2 -- "$(<"${SMOKE_LOG}")"
+    fi
+    exit 1
+  fi
+  sleep 0.1
+done
+
+kill "${SMOKE_PID}"
+set +e
+wait "${SMOKE_PID}"
+SMOKE_STATUS="$?"
+set -e
+SMOKE_PID=""
+if (( SMOKE_STATUS != 0 && SMOKE_STATUS != 143 )); then
+  print -u2 "Unable to stop the packaged app cleanly after its launch smoke test (status ${SMOKE_STATUS})."
+  exit 1
+fi
+
 hdiutil detach "${MOUNT_DIR}" >/dev/null
 DMG_ATTACHED="false"
 
