@@ -4,18 +4,25 @@ on:
   push:
     tags:
       - "v*"
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Existing vMAJOR.MINOR.PATCH tag to package
+        required: true
+        type: string
 
 permissions:
   contents: read
 
 concurrency:
-  group: release-${{ github.ref }}
+  group: release-${{ inputs.release_tag || github.ref }}
   cancel-in-progress: false
 
 env:
   DOTNET_CLI_TELEMETRY_OPTOUT: "1"
   DOTNET_NOLOGO: "1"
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: "1"
+  RELEASE_TAG: ${{ inputs.release_tag || github.ref_name }}
 
 jobs:
   macos-test:
@@ -30,6 +37,7 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           persist-credentials: false
+          ref: ${{ env.RELEASE_TAG }}
 
       - name: Run XCTest
         run: ./scripts/test.sh
@@ -44,6 +52,7 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           persist-credentials: false
+          ref: ${{ env.RELEASE_TAG }}
 
       - name: Set up .NET 10
         uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
@@ -81,6 +90,7 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           persist-credentials: false
+          ref: ${{ env.RELEASE_TAG }}
 
       - name: Build ad-hoc signed DMG and signed Sparkle feed
         env:
@@ -92,20 +102,20 @@ jobs:
           fi
           key_file="$(mktemp)"
           trap 'rm -f -- "${key_file}"' EXIT
-          print -rn -- "${SPARKLE_PRIVATE_KEY}" > "${key_file}"
+          printf '%s' "${SPARKLE_PRIVATE_KEY}" > "${key_file}"
           chmod 0600 "${key_file}"
-          ./scripts/package-release.sh "${GITHUB_REF_NAME}" "${{ matrix.architecture }}"
+          ./scripts/package-release.sh "${RELEASE_TAG}" "${{ matrix.architecture }}"
           SPARKLE_PRIVATE_KEY_FILE="${key_file}" \
             ./scripts/generate-sparkle-appcast.sh \
-              "${GITHUB_REF_NAME}" \
+              "${RELEASE_TAG}" \
               "${{ matrix.architecture }}"
 
       - name: Upload packaged DMG
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: TuckClip-${{ github.ref_name }}-macOS-${{ matrix.architecture }}
+          name: TuckClip-${{ env.RELEASE_TAG }}-macOS-${{ matrix.architecture }}
           path: |
-            dist/TuckClip-${{ github.ref_name }}-macOS-${{ matrix.architecture }}.dmg
+            dist/TuckClip-${{ env.RELEASE_TAG }}-macOS-${{ matrix.architecture }}.dmg
             dist/TuckClip-macOS-${{ matrix.architecture }}-appcast.xml
           if-no-files-found: error
           overwrite: false
@@ -132,6 +142,7 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           persist-credentials: false
+          ref: ${{ env.RELEASE_TAG }}
 
       - name: Set up .NET 10
         uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
@@ -147,7 +158,6 @@ jobs:
       - name: Build portable ZIP and Velopack installer/feed
         shell: pwsh
         env:
-          RELEASE_TAG: ${{ github.ref_name }}
           RUNTIME_ID: ${{ matrix.runtime }}
         run: |
           ./windows/scripts/Build-Installer.ps1 `
@@ -158,10 +168,10 @@ jobs:
       - name: Upload Windows packages
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: TuckClip-${{ github.ref_name }}-Windows-${{ matrix.runtime }}
+          name: TuckClip-${{ env.RELEASE_TAG }}-Windows-${{ matrix.runtime }}
           path: |
-            dist/TuckClip-${{ github.ref_name }}-Windows-${{ matrix.architecture }}-portable.zip
-            dist/TuckClip-${{ github.ref_name }}-Windows-${{ matrix.architecture }}-Setup.exe
+            dist/TuckClip-${{ env.RELEASE_TAG }}-Windows-${{ matrix.architecture }}-portable.zip
+            dist/TuckClip-${{ env.RELEASE_TAG }}-Windows-${{ matrix.architecture }}-Setup.exe
             dist/${{ matrix.package_id }}-*-full.nupkg
             dist/releases.${{ matrix.runtime }}.json
           if-no-files-found: error
@@ -183,74 +193,75 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           persist-credentials: false
+          ref: ${{ env.RELEASE_TAG }}
 
       - name: Download all packaged assets
         uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
         with:
-          pattern: TuckClip-${{ github.ref_name }}-*
+          pattern: TuckClip-${{ env.RELEASE_TAG }}-*
           path: dist
           merge-multiple: true
 
       - name: Generate combined SHA-256 file
-        run: ./scripts/generate-checksums.sh "${GITHUB_REF_NAME}" dist
+        run: ./scripts/generate-checksums.sh "${RELEASE_TAG}" dist
 
       - name: Verify complete release set
         run: |
           assets=(
-            "TuckClip-${GITHUB_REF_NAME}-macOS-arm64.dmg"
-            "TuckClip-${GITHUB_REF_NAME}-macOS-x86_64.dmg"
+            "TuckClip-${RELEASE_TAG}-macOS-arm64.dmg"
+            "TuckClip-${RELEASE_TAG}-macOS-x86_64.dmg"
             "TuckClip-macOS-arm64-appcast.xml"
             "TuckClip-macOS-x86_64-appcast.xml"
-            "TuckClip-${GITHUB_REF_NAME}-Windows-x64-portable.zip"
-            "TuckClip-${GITHUB_REF_NAME}-Windows-arm64-portable.zip"
-            "TuckClip-${GITHUB_REF_NAME}-Windows-x64-Setup.exe"
-            "TuckClip-${GITHUB_REF_NAME}-Windows-arm64-Setup.exe"
-            "io.github.iajihga.TuckClip.WinX64-${GITHUB_REF_NAME#v}-win-x64-full.nupkg"
-            "io.github.iajihga.TuckClip.WinArm64-${GITHUB_REF_NAME#v}-win-arm64-full.nupkg"
+            "TuckClip-${RELEASE_TAG}-Windows-x64-portable.zip"
+            "TuckClip-${RELEASE_TAG}-Windows-arm64-portable.zip"
+            "TuckClip-${RELEASE_TAG}-Windows-x64-Setup.exe"
+            "TuckClip-${RELEASE_TAG}-Windows-arm64-Setup.exe"
+            "io.github.iajihga.TuckClip.WinX64-${RELEASE_TAG#v}-win-x64-full.nupkg"
+            "io.github.iajihga.TuckClip.WinArm64-${RELEASE_TAG#v}-win-arm64-full.nupkg"
             "releases.win-x64.json"
             "releases.win-arm64.json"
           )
           for asset in "${assets[@]}"; do
             test -s "dist/${asset}"
           done
-          test -s "dist/TuckClip-${GITHUB_REF_NAME}-SHA256SUMS.txt"
+          test -s "dist/TuckClip-${RELEASE_TAG}-SHA256SUMS.txt"
           test "$(find dist -maxdepth 1 -type f | wc -l | tr -d ' ')" -eq 13
-          (cd dist && sha256sum --check "TuckClip-${GITHUB_REF_NAME}-SHA256SUMS.txt")
+          (cd dist && sha256sum --check "TuckClip-${RELEASE_TAG}-SHA256SUMS.txt")
 
       - name: Create GitHub Release without replacing assets
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           assets=(
-            "dist/TuckClip-${GITHUB_REF_NAME}-macOS-arm64.dmg"
-            "dist/TuckClip-${GITHUB_REF_NAME}-macOS-x86_64.dmg"
+            "dist/TuckClip-${RELEASE_TAG}-macOS-arm64.dmg"
+            "dist/TuckClip-${RELEASE_TAG}-macOS-x86_64.dmg"
             "dist/TuckClip-macOS-arm64-appcast.xml"
             "dist/TuckClip-macOS-x86_64-appcast.xml"
-            "dist/TuckClip-${GITHUB_REF_NAME}-Windows-x64-portable.zip"
-            "dist/TuckClip-${GITHUB_REF_NAME}-Windows-arm64-portable.zip"
-            "dist/TuckClip-${GITHUB_REF_NAME}-Windows-x64-Setup.exe"
-            "dist/TuckClip-${GITHUB_REF_NAME}-Windows-arm64-Setup.exe"
-            "dist/io.github.iajihga.TuckClip.WinX64-${GITHUB_REF_NAME#v}-win-x64-full.nupkg"
-            "dist/io.github.iajihga.TuckClip.WinArm64-${GITHUB_REF_NAME#v}-win-arm64-full.nupkg"
+            "dist/TuckClip-${RELEASE_TAG}-Windows-x64-portable.zip"
+            "dist/TuckClip-${RELEASE_TAG}-Windows-arm64-portable.zip"
+            "dist/TuckClip-${RELEASE_TAG}-Windows-x64-Setup.exe"
+            "dist/TuckClip-${RELEASE_TAG}-Windows-arm64-Setup.exe"
+            "dist/io.github.iajihga.TuckClip.WinX64-${RELEASE_TAG#v}-win-x64-full.nupkg"
+            "dist/io.github.iajihga.TuckClip.WinArm64-${RELEASE_TAG#v}-win-arm64-full.nupkg"
             "dist/releases.win-x64.json"
             "dist/releases.win-arm64.json"
-            "dist/TuckClip-${GITHUB_REF_NAME}-SHA256SUMS.txt"
+            "dist/TuckClip-${RELEASE_TAG}-SHA256SUMS.txt"
           )
 
-          if gh release view "${GITHUB_REF_NAME}" >/dev/null 2>&1; then
-            echo "Release ${GITHUB_REF_NAME} already exists; refusing to replace immutable assets." >&2
+          if gh release view "${RELEASE_TAG}" >/dev/null 2>&1; then
+            echo "Release ${RELEASE_TAG} already exists; refusing to replace immutable assets." >&2
             exit 1
           fi
 
           release_flags=()
-          if [[ "${GITHUB_REF_NAME}" == *-* ]]; then
+          if [[ "${RELEASE_TAG}" == *-* ]]; then
             release_flags+=(--prerelease)
           fi
 
-          notes="TuckClip ${GITHUB_REF_NAME} is available for macOS and Windows. Installed editions can check for future updates automatically; portable Windows builds remain manually updatable. See the repository README for installation and usage instructions. Every download can be verified with the included SHA-256 checksum file."
-          gh release create "${GITHUB_REF_NAME}" "${assets[@]}" \
+          notes="TuckClip ${RELEASE_TAG} is available for macOS and Windows. Installed editions can check for future updates automatically; portable Windows builds remain manually updatable. See the repository README for installation and usage instructions. Every download can be verified with the included SHA-256 checksum file."
+          gh release create "${RELEASE_TAG}" "${assets[@]}" \
             --verify-tag \
             --generate-notes \
             --notes "${notes}" \
-            --title "TuckClip ${GITHUB_REF_NAME}" \
+            --title "TuckClip ${RELEASE_TAG}" \
             "${release_flags[@]}"
