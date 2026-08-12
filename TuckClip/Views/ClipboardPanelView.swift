@@ -227,6 +227,14 @@ struct ClipboardPanelView: View {
                         proxy.scrollTo(selectedID, anchor: .center)
                     }
                 }
+                .onChange(of: viewModel.presentationGeneration) { _, _ in
+                    guard let newestID = viewModel.filteredItems.first?.id else { return }
+                    // Defer one UI turn so a just-refreshed LazyHStack has laid
+                    // out its first card before resetting the saved scroll offset.
+                    DispatchQueue.main.async {
+                        proxy.scrollTo(newestID, anchor: .leading)
+                    }
+                }
             }
         }
     }

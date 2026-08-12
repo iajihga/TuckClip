@@ -65,6 +65,20 @@ public sealed class ClipboardPanelViewModelTests
     }
 
     [TestMethod]
+    public void SelectingNewestVisibleItemResetsAnOlderSelection()
+    {
+        using var viewModel = new ClipboardPanelViewModel(new RecordingUiActions());
+        var newest = CreateItem(title: "newest");
+        var older = CreateItem(title: "older");
+        viewModel.ReplaceItems([newest, older]);
+        viewModel.SelectedItem = older;
+
+        viewModel.SelectNewestVisibleItem();
+
+        Assert.AreSame(newest, viewModel.SelectedItem);
+    }
+
+    [TestMethod]
     public void PlainTextPasteIsIgnoredForImages()
     {
         var actions = new RecordingUiActions();

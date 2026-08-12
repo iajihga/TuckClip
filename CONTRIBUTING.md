@@ -12,7 +12,7 @@
 - `windows/src/TuckClip.Windows/`：Avalonia UI 与应用协调层。
 - `windows/tests/`：Windows Core、平台、设置集成与 UI 自动测试。
 - `shared/specs/`：两个平台应共同遵循的剪贴板与历史约定。
-- `scripts/`、`windows/scripts/`、`windows/installer/`：测试和发布打包。
+- `scripts/`、`windows/scripts/`：测试、更新元数据和发布打包。
 
 ## 开发环境
 
@@ -21,6 +21,8 @@
 - macOS 14 或更高版本
 - Xcode 16.3 或更高版本
 - Git
+
+macOS 客户端固定使用 Swift Package Manager 解析的 Sparkle 2.9.5。请提交 `Package.resolved`，不要在本地或 CI 中漂移依赖版本。
 
 ```bash
 xcodebuild \
@@ -39,7 +41,6 @@ xcodebuild \
 - Windows 11，优先在与改动匹配的 x64 或 ARM64 设备上开发
 - PowerShell 7
 - `windows/global.json` 指定的 .NET 10 SDK
-- 构建安装器时需要 Inno Setup 6.5 或更高版本
 - Git
 
 ```powershell
@@ -94,7 +95,7 @@ Pull request 请写清问题、改动范围、测试命令、实机环境、结�
 
 正式发布至少覆盖 Windows 11 x64；ARM64 资产需要 Windows 11 ARM64 实机确认。Windows 10 22H2 结果应标记为 best effort：
 
-1. 分别校验 portable ZIP 与 Inno installer 的 SHA-256；确认资产架构和文件名一致。
+1. 分别校验 portable ZIP 与 Velopack installer 的 SHA-256；确认资产架构和文件名一致。
 2. 验证安装器以当前用户安装、不触发 UAC、可卸载，且卸载不会暗中删除历史；验证 portable 包不把数据写在程序目录。
 3. 记录未签名 SmartScreen 的实际提示，确认文档没有把未签名构建描述成可信发布者。
 4. 验证单实例、托盘/面板生命周期、默认与自定义唤起快捷键、搜索、方向键、1–9、置顶、删除、暂停和立即恢复；另在 1366×768、150% 缩放等紧凑工作区检查窗口没有被裁切。
@@ -132,14 +133,18 @@ Windows portable 与安装器：
 
 Windows 脚本只接受 `vMAJOR.MINOR.PATCH[-PRERELEASE]`，执行 locked restore，生成 self-contained 包，检查 PE machine，移除并复查 PDB，并拒绝覆盖已有同名资产。请使用新的空输出目录重跑失败构建。
 
+安装版通过 Velopack 1.2.0 生成。每个 Windows 架构都有独立的 package ID、channel、完整 `.nupkg` 和 `releases.<runtime>.json`；portable ZIP 不参与应用内更新。
+
+macOS 的每个架构都有独立 appcast。发布前需要将 Sparkle 私钥配置为仓库 Actions secret `SPARKLE_PRIVATE_KEY`；私钥不得进入源码、构建日志或发布资产。工作流会对 DMG 生成并复核 Ed25519 签名后才写入 appcast。
+
 ## 发布者清单
 
 推送版本 tag 会直接触发 `.github/workflows/release.yml` 并创建公开 Release。不要把 tag 当作 CI 试运行按钮；在以下项目全部完成前不要创建 tag：
 
 1. tag、版本号和干净工作区一致；macOS 与 Windows 完整自动测试均通过。
 2. 两个平台的实机清单完成，并记录具体系统版本与架构。Windows 交互行为不能只引用 `windows-2025` 托管 CI。
-3. 最终资产恰好包含两个 DMG、两个 portable ZIP、两个 Inno installer 和一个统一 `SHA256SUMS`。
-4. macOS 分别核对 `arm64`/`x86_64`；Windows 分别核对 publish/portable 包内 `TuckClip.exe` 的 PE machine `0x8664`/`0xAA64`（不要用 Inno bootstrap 自身架构代替），并从最终上传资产重新计算 SHA-256。
+3. 最终资产恰好包含两个 DMG、两个 Sparkle appcast、两个 portable ZIP、两个 Velopack installer、两个完整 `.nupkg`、两个 Velopack feed 和一个统一 `SHA256SUMS`。
+4. macOS 分别核对 `arm64`/`x86_64`；Windows 分别核对 publish/portable 包内 `TuckClip.exe` 的 PE machine `0x8664`/`0xAA64`（不要用安装器 bootstrap 自身架构代替），并从最终上传资产重新计算 SHA-256。
 5. 发布说明明确最低系统、架构、签名和公证状态：当前 macOS 是 ad-hoc 且未公证；Windows 没有 Authenticode 签名，会触发 SmartScreen。
 6. Windows 普通权限与 UIPI 降级、DPAPI 用户绑定、Windows 10 best effort 均在发布说明中可见。
 7. 确认同 tag Release 不存在。工作流和脚本不会覆盖已有资产；发现错误应停止并使用新的版本 tag，不要静默替换公开二进制。

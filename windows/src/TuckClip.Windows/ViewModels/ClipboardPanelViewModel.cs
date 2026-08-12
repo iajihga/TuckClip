@@ -381,6 +381,11 @@ public sealed class ClipboardPanelViewModel : ObservableObject, IDisposable
         });
     }
 
+    public void SelectNewestVisibleItem()
+    {
+        SelectedItem = _filteredItems.FirstOrDefault();
+    }
+
     public void Dispose()
     {
         _noticeCancellation?.Cancel();

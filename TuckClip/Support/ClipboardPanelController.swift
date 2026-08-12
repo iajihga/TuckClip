@@ -73,7 +73,7 @@ final class ClipboardPanelController: NSObject, NSWindowDelegate {
 
         viewModel.beginPanelSession()
         onWillShow?()
-        viewModel.ensureSelection()
+        viewModel.prepareForPresentation()
         positionPanel()
         installKeyMonitor()
 

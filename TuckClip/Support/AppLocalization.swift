@@ -148,6 +148,7 @@ enum L10n {
         "最近一次保存失败，查看设置…": "Latest save failed — open Settings…",
         "清除未置顶历史…": "Clear Unpinned History…",
         "设置…": "Settings…",
+        "检查更新…": "Check for Updates…",
         "退出 TuckClip": "Quit TuckClip",
         "快捷键不可用：%@": "Shortcut unavailable: %@",
         "TuckClip 设置": "TuckClip Settings",

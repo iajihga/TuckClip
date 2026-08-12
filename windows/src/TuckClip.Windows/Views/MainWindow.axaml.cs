@@ -2,6 +2,8 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Threading;
+using Avalonia.VisualTree;
 using TuckClip.Windows.Controls;
 using TuckClip.Windows.ViewModels;
 
@@ -16,6 +18,7 @@ public sealed partial class MainWindow : Window
     private const double WorkingAreaInset = 24;
     private const double AbsoluteMinimumWidth = 360;
     private const double AbsoluteMinimumHeight = 240;
+    private const double HorizontalWheelStep = 72;
 
     private bool _allowClose;
     private PixelRect? _lastConstrainedWorkingArea;
@@ -40,6 +43,11 @@ public sealed partial class MainWindow : Window
         Closing += OnWindowClosing;
         KeyDown += OnWindowKeyDown;
         AddHandler(KeyDownEvent, OnPreviewShortcutKeyDown, RoutingStrategies.Tunnel);
+        CardList.AddHandler(
+            PointerWheelChangedEvent,
+            OnCardListPointerWheelChanged,
+            RoutingStrategies.Tunnel,
+            handledEventsToo: true);
         Activated += OnWindowActivated;
         Opened += (_, _) => ConstrainToCurrentScreen(force: true);
         PositionChanged += (_, _) => ConstrainToCurrentScreen(force: false);
@@ -52,6 +60,12 @@ public sealed partial class MainWindow : Window
     {
         SearchBox.Focus();
         SearchBox.SelectAll();
+    }
+
+    public void PrepareForPresentation()
+    {
+        ViewModel.SelectNewestVisibleItem();
+        Dispatcher.UIThread.Post(ResetScrollToNewestVisible, DispatcherPriority.Loaded);
     }
 
     public void CloseForApplicationExit()
@@ -167,6 +181,28 @@ public sealed partial class MainWindow : Window
         }
     }
 
+    private void OnCardListPointerWheelChanged(object? sender, PointerWheelEventArgs e)
+    {
+        var scrollViewer = CardList.GetVisualDescendants().OfType<ScrollViewer>().FirstOrDefault();
+        if (scrollViewer is null)
+        {
+            return;
+        }
+
+        var targetOffset = MapVerticalWheelToHorizontalOffset(
+            e.Delta,
+            scrollViewer.Offset.X,
+            scrollViewer.ScrollBarMaximum.X);
+        if (targetOffset is null)
+        {
+            // Native horizontal trackpad/wheel input remains owned by ScrollViewer.
+            return;
+        }
+
+        scrollViewer.Offset = new Vector(targetOffset.Value, scrollViewer.Offset.Y);
+        e.Handled = true;
+    }
+
     private void OnClearSearchClick(object? sender, RoutedEventArgs e)
     {
         ViewModel.ClearSearch();
@@ -225,6 +261,32 @@ public sealed partial class MainWindow : Window
         {
             CardList.ScrollIntoView(ViewModel.SelectedItem);
         }
+    }
+
+    private void ResetScrollToNewestVisible()
+    {
+        var scrollViewer = CardList.GetVisualDescendants().OfType<ScrollViewer>().FirstOrDefault();
+        if (scrollViewer is not null)
+        {
+            scrollViewer.Offset = new Vector(0, scrollViewer.Offset.Y);
+        }
+
+        ScrollSelectionIntoView();
+    }
+
+    internal static double? MapVerticalWheelToHorizontalOffset(
+        Vector delta,
+        double currentOffset,
+        double maximumOffset)
+    {
+        if (Math.Abs(delta.X) > double.Epsilon || Math.Abs(delta.Y) <= double.Epsilon)
+        {
+            return null;
+        }
+
+        var safeCurrent = double.IsFinite(currentOffset) ? currentOffset : 0;
+        var safeMaximum = double.IsFinite(maximumOffset) ? Math.Max(0, maximumOffset) : 0;
+        return Math.Clamp(safeCurrent - (delta.Y * HorizontalWheelStep), 0, safeMaximum);
     }
 
     private void ConstrainToCurrentScreen(bool force)

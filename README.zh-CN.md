@@ -19,7 +19,8 @@ TuckClip 是一款免费、开源的 macOS 与 Windows 剪贴板历史工具。�
 - 暂停记录，并设置保留期和历史数量
 - 按应用排除不想保存的剪贴板内容
 - 界面可跟随系统语言，也可指定简体中文或 English
-- 数据保存在本机，无账号、遥测、云同步或运行时网络请求
+- 安装版自动检查更新，安装前由用户确认
+- 剪贴板数据保存在本机，无账号、遥测或云同步
 
 ## 下载 TuckClip
 
@@ -32,7 +33,7 @@ TuckClip 是一款免费、开源的 macOS 与 Windows 剪贴板历史工具。�
 | Windows x64 | `TuckClip-*-Windows-x64-Setup.exe` |
 | Windows ARM64 | `TuckClip-*-Windows-arm64-Setup.exe` |
 
-Windows 还提供免安装的 ZIP。每个版本都附带 `SHA256SUMS.txt`，可用于核对文件。
+Windows 还提供免安装的 ZIP。安装版会从 GitHub Releases 检查稳定更新，并在下载和重启前征求你的确认；免安装 ZIP 仍需手动更新。每个版本都附带 `SHA256SUMS.txt`，可用于核对文件。
 
 > 当前公开构建尚未签名，因此 macOS 或 Windows 首次启动时可能要求你确认。请只从本仓库下载 TuckClip，并核对校验值。
 
@@ -46,6 +47,8 @@ Windows 还提供免安装的 ZIP。每个版本都附带 `SHA256SUMS.txt`，可
 你可以在“**设置 → 记录 → 快捷键**”中修改快捷键。如果新按键已被其他应用占用，TuckClip 会继续使用原来的快捷键。
 
 你也可以在“**设置 → 记录 → 语言**”中选择“跟随系统”“简体中文”或“English”，界面会立即更新。
+
+TuckClip 会在启动后检查稳定更新。你也可以从 macOS 菜单栏或 Windows 托盘菜单选择“**检查更新…**”。只有确认后，应用才会安装更新。
 
 ## 隐私
 
@@ -79,7 +82,7 @@ TuckClip 是一款跨平台剪贴板管理工具，为 macOS 和 Windows 提供�
 
 ### TuckClip 会上传或同步剪贴板内容吗？
 
-不会。TuckClip 没有账号、遥测、云同步或运行时网络请求，剪贴板历史只保存在本机用户目录。
+不会。剪贴板历史只保存在本机用户目录，TuckClip 不会上传它。应用仅会连接本项目的 GitHub Releases，用于检查和下载更新。
 
 ## 从源码构建
 

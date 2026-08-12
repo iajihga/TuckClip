@@ -19,7 +19,8 @@ TuckClip is a free, open-source clipboard history manager for macOS and Windows.
 - Capture pause, retention period, and history size controls
 - Per-app exclusions for clipboard content you do not want to save
 - Interface language that follows the system or uses English or Simplified Chinese
-- Local storage with no account, telemetry, cloud sync, or runtime network requests
+- Automatic update checks for installed builds, with confirmation before installation
+- Local clipboard storage with no account, telemetry, or cloud sync
 
 ## Download TuckClip
 
@@ -32,7 +33,7 @@ Download the latest version from [GitHub Releases](https://github.com/iajihga/Tu
 | Windows x64 | `TuckClip-*-Windows-x64-Setup.exe` |
 | Windows ARM64 | `TuckClip-*-Windows-arm64-Setup.exe` |
 
-Portable Windows ZIPs are also available. Every release includes `SHA256SUMS.txt` for file verification.
+Portable Windows ZIPs are also available. Installed builds check GitHub Releases for stable updates and ask before downloading and restarting. Portable ZIPs remain manually updatable. Every release includes `SHA256SUMS.txt` for file verification.
 
 > Release builds are currently unsigned, so macOS or Windows may ask you to confirm the first launch. Download TuckClip only from this repository and verify the checksum.
 
@@ -46,6 +47,8 @@ Portable Windows ZIPs are also available. Every release includes `SHA256SUMS.txt
 You can change the shortcut under **Settings → Capture → Shortcut**. If the new combination is already in use, TuckClip keeps the previous shortcut active.
 
 Choose **Follow System**, **English**, or **Simplified Chinese** under **Settings → Capture → Language**. The interface updates immediately.
+
+TuckClip checks for stable updates after launch. You can also choose **Check for Updates…** from the macOS menu bar or Windows tray menu. An update is installed only after you confirm it.
 
 ## Privacy
 
@@ -79,7 +82,7 @@ Yes. The global shortcut is customizable on both macOS and Windows from TuckClip
 
 ### Does TuckClip upload or sync clipboard data?
 
-No. TuckClip has no account system, telemetry, cloud sync, or runtime network requests. Clipboard history stays in the local user data directory.
+No. Clipboard history stays in the local user data directory and is never uploaded by TuckClip. The app only connects to this project's GitHub Releases to check for and download updates.
 
 ## Build from source
 

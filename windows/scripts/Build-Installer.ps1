@@ -9,7 +9,7 @@ param(
     [string]$Runtime,
 
     [string]$OutputDirectory,
-    [string]$InnoCompiler,
+    [string]$VpkExecutable,
 
     [switch]$NoRestore
 )
@@ -17,13 +17,15 @@ param(
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
+$vpkVersion = '1.2.0'
 $windowsRoot = Split-Path -Parent $PSScriptRoot
 $repositoryRoot = Split-Path -Parent $windowsRoot
 $publishScript = Join-Path $PSScriptRoot 'Publish-Portable.ps1'
-$installerScript = Join-Path $windowsRoot 'installer/TuckClip.iss'
-$publishDirectory = Join-Path $windowsRoot "artifacts/publish/$Runtime"
+$artifactsRoot = Join-Path $windowsRoot 'artifacts'
+$publishDirectory = Join-Path $artifactsRoot "publish/$Runtime"
+$velopackDirectory = Join-Path $artifactsRoot "velopack/$Runtime"
+$toolDirectory = Join-Path $artifactsRoot 'tools/vpk'
 $version = $Tag.Substring(1)
-$numericVersion = ($version -split '-', 2)[0]
 
 if ($Tag.Length -gt 80) {
     throw 'Release tags cannot exceed 80 characters.'
@@ -35,36 +37,40 @@ if ([string]::IsNullOrWhiteSpace($OutputDirectory)) {
 $OutputDirectory = [IO.Path]::GetFullPath($OutputDirectory)
 
 $architecture = $Runtime.Substring(4)
+$packageId = if ($Runtime -eq 'win-x64') {
+    'io.github.iajihga.TuckClip.WinX64'
+} else {
+    'io.github.iajihga.TuckClip.WinArm64'
+}
 $installerPath = Join-Path $OutputDirectory "TuckClip-$Tag-Windows-$architecture-Setup.exe"
-$checksumPath = "$installerPath.sha256"
-if ((Test-Path -LiteralPath $installerPath) -or (Test-Path -LiteralPath $checksumPath)) {
-    throw "Refusing to replace an existing installer asset or checksum: $installerPath"
-}
+$packagePath = Join-Path $OutputDirectory "$packageId-$version-$Runtime-full.nupkg"
+$feedPath = Join-Path $OutputDirectory "releases.$Runtime.json"
 
-if ([string]::IsNullOrWhiteSpace($InnoCompiler)) {
-    $compilerCommand = Get-Command 'ISCC.exe' -ErrorAction SilentlyContinue
-    if ($null -ne $compilerCommand) {
-        $InnoCompiler = $compilerCommand.Source
+foreach ($target in @($installerPath, $packagePath, $feedPath)) {
+    if (Test-Path -LiteralPath $target) {
+        throw "Refusing to replace an existing Windows release asset: $target"
     }
 }
 
-if ([string]::IsNullOrWhiteSpace($InnoCompiler)) {
-    $compilerCandidates = [Collections.Generic.List[string]]::new()
-    if (-not [string]::IsNullOrWhiteSpace(${env:ProgramFiles(x86)})) {
-        $compilerCandidates.Add((Join-Path ${env:ProgramFiles(x86)} 'Inno Setup 6/ISCC.exe'))
-    }
-    if (-not [string]::IsNullOrWhiteSpace($env:ProgramFiles)) {
-        $compilerCandidates.Add((Join-Path $env:ProgramFiles 'Inno Setup 7/ISCC.exe'))
-        $compilerCandidates.Add((Join-Path $env:ProgramFiles 'Inno Setup 6/ISCC.exe'))
-    }
-    $InnoCompiler = $compilerCandidates |
-        Where-Object { Test-Path -LiteralPath $_ -PathType Leaf } |
-        Select-Object -First 1
-}
+function Reset-ControlledDirectory {
+    param(
+        [Parameter(Mandatory)] [string]$Path,
+        [Parameter(Mandatory)] [string]$AllowedRoot
+    )
 
-if ([string]::IsNullOrWhiteSpace($InnoCompiler) -or
-    -not (Test-Path -LiteralPath $InnoCompiler -PathType Leaf)) {
-    throw 'Inno Setup 6.5 or newer was not found. Pass -InnoCompiler or add ISCC.exe to PATH.'
+    $resolvedPath = [IO.Path]::GetFullPath($Path)
+    $resolvedRoot = [IO.Path]::GetFullPath($AllowedRoot).TrimEnd(
+        [IO.Path]::DirectorySeparatorChar,
+        [IO.Path]::AltDirectorySeparatorChar)
+    $requiredPrefix = $resolvedRoot + [IO.Path]::DirectorySeparatorChar
+    if (-not $resolvedPath.StartsWith($requiredPrefix, [StringComparison]::OrdinalIgnoreCase)) {
+        throw "Refusing to reset a directory outside the controlled artifacts root: $resolvedPath"
+    }
+
+    if (Test-Path -LiteralPath $resolvedPath) {
+        Remove-Item -LiteralPath $resolvedPath -Recurse -Force
+    }
+    New-Item -ItemType Directory -Force -Path $resolvedPath | Out-Null
 }
 
 & $publishScript `
@@ -73,44 +79,62 @@ if ([string]::IsNullOrWhiteSpace($InnoCompiler) -or
     -OutputDirectory $OutputDirectory `
     -NoRestore:$NoRestore
 
-New-Item -ItemType Directory -Force -Path $OutputDirectory | Out-Null
+Reset-ControlledDirectory -Path $velopackDirectory -AllowedRoot $artifactsRoot
 
-$arguments = @(
-    '/Qp',
-    "/DVersion=$version",
-    "/DNumericVersion=$numericVersion",
-    "/DRuntime=$Runtime",
-    "/DSourceDir=$publishDirectory",
-    "/O$OutputDirectory",
-    $installerScript
-)
+if ([string]::IsNullOrWhiteSpace($VpkExecutable)) {
+    Reset-ControlledDirectory -Path $toolDirectory -AllowedRoot $artifactsRoot
+    & dotnet tool install --tool-path $toolDirectory vpk --version $vpkVersion
+    if ($LASTEXITCODE -ne 0) {
+        throw "Installing vpk $vpkVersion failed with exit code $LASTEXITCODE."
+    }
+    $VpkExecutable = Join-Path $toolDirectory 'vpk.exe'
+}
 
-& $InnoCompiler @arguments
+if (-not (Test-Path -LiteralPath $VpkExecutable -PathType Leaf)) {
+    throw "vpk was not found: $VpkExecutable"
+}
+
+& $VpkExecutable pack `
+    --outputDir $velopackDirectory `
+    --channel $Runtime `
+    --runtime $Runtime `
+    --packId $packageId `
+    --packVersion $version `
+    --packDir $publishDirectory `
+    --packAuthors 'TuckClip contributors' `
+    --packTitle TuckClip `
+    --icon (Join-Path $windowsRoot 'src/TuckClip.Windows/Assets/TuckClip.ico') `
+    --mainExe TuckClip.exe `
+    --instLicense (Join-Path $repositoryRoot 'LICENSE') `
+    --noPortable true `
+    --delta none
 if ($LASTEXITCODE -ne 0) {
-    throw "Inno Setup failed with exit code $LASTEXITCODE."
+    throw "Velopack packaging failed with exit code $LASTEXITCODE."
 }
 
-if (-not (Test-Path -LiteralPath $installerPath -PathType Leaf)) {
-    throw "Expected installer was not created: $installerPath"
+$generatedInstallers = @(Get-ChildItem -LiteralPath $velopackDirectory -Filter '*-Setup.exe' -File)
+if ($generatedInstallers.Count -ne 1) {
+    throw "Expected one Velopack installer, found $($generatedInstallers.Count)."
 }
-if ((Get-Item -LiteralPath $installerPath).Length -eq 0) {
-    throw "Inno Setup created an empty installer: $installerPath"
+$generatedPackage = Join-Path $velopackDirectory "$packageId-$version-$Runtime-full.nupkg"
+$generatedFeed = Join-Path $velopackDirectory "releases.$Runtime.json"
+foreach ($generated in @($generatedPackage, $generatedFeed)) {
+    if (-not (Test-Path -LiteralPath $generated -PathType Leaf)) {
+        throw "Velopack did not create the expected update asset: $generated"
+    }
 }
 
-$hash = (Get-FileHash -LiteralPath $installerPath -Algorithm SHA256).Hash.ToLowerInvariant()
-$checksumLine = "$hash  $([IO.Path]::GetFileName($installerPath))`n"
-$checksumBytes = [Text.UTF8Encoding]::new($false).GetBytes($checksumLine)
-$checksumStream = [IO.File]::Open(
-    $checksumPath,
-    [IO.FileMode]::CreateNew,
-    [IO.FileAccess]::Write,
-    [IO.FileShare]::None)
-try {
-    $checksumStream.Write($checksumBytes, 0, $checksumBytes.Length)
-}
-finally {
-    $checksumStream.Dispose()
+New-Item -ItemType Directory -Force -Path $OutputDirectory | Out-Null
+[IO.File]::Move($generatedInstallers[0].FullName, $installerPath)
+[IO.File]::Move($generatedPackage, $packagePath)
+[IO.File]::Move($generatedFeed, $feedPath)
+
+foreach ($asset in @($installerPath, $packagePath, $feedPath)) {
+    if ((Get-Item -LiteralPath $asset).Length -eq 0) {
+        throw "Velopack created an empty release asset: $asset"
+    }
 }
 
 Write-Host "Created $installerPath"
-Write-Host "Created $checksumPath"
+Write-Host "Created $packagePath"
+Write-Host "Created $feedPath"

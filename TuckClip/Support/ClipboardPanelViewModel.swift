@@ -181,6 +181,7 @@ final class ClipboardPanelViewModel: ObservableObject {
     @Published var searchText = ""
     @Published var selectedFilter: ClipTypeFilter = .all
     @Published var selectedID: UUID?
+    @Published private(set) var presentationGeneration = 0
 
     weak var bridge: ClipboardUIBridge?
     private var noticeDismissTask: Task<Void, Never>?
@@ -235,6 +236,14 @@ final class ClipboardPanelViewModel: ObservableObject {
 
     func ensureSelection() {
         repairSelection()
+    }
+
+    /// Starts each visible panel presentation from the newest item in the
+    /// current search/filter result. The generation also lets the view reset
+    /// its horizontal scroll position when the selected item was already first.
+    func prepareForPresentation() {
+        selectedID = filteredItems.first?.id
+        presentationGeneration &+= 1
     }
 
     func beginPanelSession() {

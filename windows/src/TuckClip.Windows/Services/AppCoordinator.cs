@@ -35,7 +35,11 @@ internal sealed class AppCoordinator : IClipboardUiActions, IPanelSessionBoundar
     private NativeMenuItem? _recordingMenuItem;
     private NativeMenuItem? _openMenuItem;
     private NativeMenuItem? _settingsMenuItem;
+    private NativeMenuItem? _updateMenuItem;
     private NativeMenuItem? _quitMenuItem;
+    private VelopackUpdateClient? _updateClient;
+    private UpdateWindow? _updateWindow;
+    private readonly SemaphoreSlim _updateGate = new(1, 1);
     private PastePanelSession? _panelSession;
     private CancellationTokenSource? _pasteCancellation;
     private string? _deferredNotice;
@@ -147,6 +151,7 @@ internal sealed class AppCoordinator : IClipboardUiActions, IPanelSessionBoundar
                 _nativeApi,
                 ownerResolver);
             _pasteService = new PasteService(this, _nativeApi, _nativeApi);
+            _updateClient = new VelopackUpdateClient();
 
             CreateTrayIcon();
             RefreshHistoryView();
@@ -159,6 +164,8 @@ internal sealed class AppCoordinator : IClipboardUiActions, IPanelSessionBoundar
                 _showPanelWhenReady = false;
                 ShowPanel(capturePasteTarget: false);
             }
+
+            TrackBackgroundTask(CheckForUpdatesAfterStartupAsync());
         }
         finally
         {
@@ -454,11 +461,14 @@ internal sealed class AppCoordinator : IClipboardUiActions, IPanelSessionBoundar
             {
                 _trayIcon?.Dispose();
                 _trayIcon = null;
+                _updateWindow?.CloseForApplicationExit();
+                _updateWindow = null;
                 _settingsWindow?.CloseForApplicationExit();
                 _mainWindow?.CloseForApplicationExit();
                 _messageHost?.Dispose();
                 _historyStore?.Dispose();
                 _settingsGate.Dispose();
+                _updateGate.Dispose();
                 _lifetimeCancellation.Dispose();
             }
             else
@@ -844,6 +854,7 @@ internal sealed class AppCoordinator : IClipboardUiActions, IPanelSessionBoundar
         {
             _mainWindow.Show();
         }
+        _mainWindow.PrepareForPresentation();
         _mainWindow.Activate();
         _mainWindow.FocusSearch();
 
@@ -879,11 +890,14 @@ internal sealed class AppCoordinator : IClipboardUiActions, IPanelSessionBoundar
         _recordingMenuItem.Click += (_, _) => ToggleRecordingFromTray();
         _settingsMenuItem = new NativeMenuItem();
         _settingsMenuItem.Click += (_, _) => ShowSettings();
+        _updateMenuItem = new NativeMenuItem();
+        _updateMenuItem.Click += (_, _) => TrackBackgroundTask(CheckForUpdatesAsync(userInitiated: true));
         _quitMenuItem = new NativeMenuItem();
         _quitMenuItem.Click += (_, _) => _requestShutdown();
         menu.Add(_openMenuItem);
         menu.Add(_recordingMenuItem);
         menu.Add(_settingsMenuItem);
+        menu.Add(_updateMenuItem);
         menu.Add(new NativeMenuItemSeparator());
         menu.Add(_quitMenuItem);
 
@@ -927,6 +941,10 @@ internal sealed class AppCoordinator : IClipboardUiActions, IPanelSessionBoundar
         {
             _settingsMenuItem.Header = AppLocalization.Text("设置…");
         }
+        if (_updateMenuItem is not null)
+        {
+            _updateMenuItem.Header = AppLocalization.Text("检查更新…");
+        }
         if (_quitMenuItem is not null)
         {
             _quitMenuItem.Header = AppLocalization.Text("退出 TuckClip");
@@ -935,6 +953,160 @@ internal sealed class AppCoordinator : IClipboardUiActions, IPanelSessionBoundar
         {
             _trayIcon.ToolTipText = $"TuckClip · {_settings.GlobalHotKey.DisplayText}";
         }
+    }
+
+    private async Task CheckForUpdatesAfterStartupAsync()
+    {
+        try
+        {
+            await Task.Delay(TimeSpan.FromSeconds(3), _lifetimeCancellation.Token);
+            await CheckForUpdatesAsync(userInitiated: false);
+        }
+        catch (OperationCanceledException) when (_lifetimeCancellation.IsCancellationRequested)
+        {
+        }
+    }
+
+    private async Task CheckForUpdatesAsync(bool userInitiated)
+    {
+        if (_updateClient is null)
+        {
+            return;
+        }
+
+        if (await Dispatcher.UIThread.InvokeAsync(ActivateExistingUpdateWindow))
+        {
+            return;
+        }
+
+        if (!await _updateGate.WaitAsync(0, _lifetimeCancellation.Token))
+        {
+            if (userInitiated)
+            {
+                ShowUpdateNotice(AppLocalization.Text("正在检查更新…"));
+            }
+            return;
+        }
+
+        try
+        {
+            if (!_updateClient.IsInstalled)
+            {
+                if (userInitiated)
+                {
+                    ShowUpdateNotice(AppLocalization.Text("便携版不支持应用内更新，请安装正式安装版。"));
+                }
+                return;
+            }
+
+            var session = await _updateClient.CheckForUpdatesAsync();
+            if (session is null)
+            {
+                if (userInitiated)
+                {
+                    ShowUpdateNotice(AppLocalization.Text("当前已是最新版本。"));
+                }
+                return;
+            }
+
+            await Dispatcher.UIThread.InvokeAsync(() => PresentUpdate(session));
+        }
+        catch (OperationCanceledException) when (_lifetimeCancellation.IsCancellationRequested)
+        {
+        }
+        catch (Exception exception)
+        {
+            System.Diagnostics.Trace.TraceWarning(
+                "TuckClip update check failed: {0}",
+                exception.Message);
+            if (userInitiated)
+            {
+                ShowUpdateNotice(AppLocalization.Text("暂时无法检查更新，请稍后重试。"));
+            }
+        }
+        finally
+        {
+            _updateGate.Release();
+        }
+    }
+
+    private void PresentUpdate(IWindowsUpdateSession session)
+    {
+        if (_stopping || _disposed)
+        {
+            return;
+        }
+
+        if (ActivateExistingUpdateWindow())
+        {
+            return;
+        }
+
+        UpdateWindow? window = null;
+        window = new UpdateWindow(
+            session,
+            () =>
+            {
+                if (window is not null)
+                {
+                    TrackBackgroundTask(DownloadAndApplyUpdateAsync(session, window));
+                }
+            });
+        window.Closed += (_, _) =>
+        {
+            if (ReferenceEquals(_updateWindow, window))
+            {
+                _updateWindow = null;
+            }
+        };
+        _updateWindow = window;
+        window.Show();
+        window.Activate();
+    }
+
+    private bool ActivateExistingUpdateWindow()
+    {
+        if (_updateWindow is not { IsVisible: true } window)
+        {
+            return false;
+        }
+
+        window.Activate();
+        return true;
+    }
+
+    private async Task DownloadAndApplyUpdateAsync(
+        IWindowsUpdateSession session,
+        UpdateWindow window)
+    {
+        try
+        {
+            await session.DownloadAsync(
+                progress => Dispatcher.UIThread.Post(() => window.ReportProgress(progress)),
+                _lifetimeCancellation.Token);
+            session.ScheduleApplyAndRestart();
+            Dispatcher.UIThread.Post(_requestShutdown);
+        }
+        catch (OperationCanceledException) when (_lifetimeCancellation.IsCancellationRequested)
+        {
+        }
+        catch (Exception exception)
+        {
+            System.Diagnostics.Trace.TraceError(
+                "TuckClip update download or apply failed: {0}",
+                exception.Message);
+            Dispatcher.UIThread.Post(() => window.ReportFailure(
+                AppLocalization.Text("更新失败，当前版本没有被替换。请稍后重试。")));
+        }
+    }
+
+    private void ShowUpdateNotice(string message)
+    {
+        Dispatcher.UIThread.Post(() =>
+        {
+            ShowPanel(capturePasteTarget: false);
+            _mainWindow?.ViewModel.ShowNotice(message);
+        });
     }
 
     private void RefreshHistoryView()
