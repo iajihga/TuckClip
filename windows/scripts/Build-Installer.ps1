@@ -43,7 +43,7 @@ $packageId = if ($Runtime -eq 'win-x64') {
     'io.github.iajihga.TuckClip.WinArm64'
 }
 $installerPath = Join-Path $OutputDirectory "TuckClip-$Tag-Windows-$architecture-Setup.exe"
-$packagePath = Join-Path $OutputDirectory "$packageId-$version-full.nupkg"
+$packagePath = Join-Path $OutputDirectory "$packageId-$version-$Runtime-full.nupkg"
 $feedPath = Join-Path $OutputDirectory "releases.$Runtime.json"
 
 foreach ($target in @($installerPath, $packagePath, $feedPath)) {
@@ -116,7 +116,7 @@ $generatedInstallers = @(Get-ChildItem -LiteralPath $velopackDirectory -Filter '
 if ($generatedInstallers.Count -ne 1) {
     throw "Expected one Velopack installer, found $($generatedInstallers.Count)."
 }
-$generatedPackage = Join-Path $velopackDirectory "$packageId-$version-full.nupkg"
+$generatedPackage = Join-Path $velopackDirectory "$packageId-$version-$Runtime-full.nupkg"
 $generatedFeed = Join-Path $velopackDirectory "releases.$Runtime.json"
 foreach ($generated in @($generatedPackage, $generatedFeed)) {
     if (-not (Test-Path -LiteralPath $generated -PathType Leaf)) {

@@ -42,8 +42,8 @@ assets=(
   "TuckClip-${release_tag}-Windows-arm64-portable.zip"
   "TuckClip-${release_tag}-Windows-x64-Setup.exe"
   "TuckClip-${release_tag}-Windows-arm64-Setup.exe"
-  "io.github.iajihga.TuckClip.WinX64-${release_tag#v}-full.nupkg"
-  "io.github.iajihga.TuckClip.WinArm64-${release_tag#v}-full.nupkg"
+  "io.github.iajihga.TuckClip.WinX64-${release_tag#v}-win-x64-full.nupkg"
+  "io.github.iajihga.TuckClip.WinArm64-${release_tag#v}-win-arm64-full.nupkg"
   "releases.win-x64.json"
   "releases.win-arm64.json"
 )
@@ -74,7 +74,7 @@ done < <(
     \( \
       -name "TuckClip-${release_tag}-*" -o \
       -name 'TuckClip-macOS-*-appcast.xml' -o \
-      -name "io.github.iajihga.TuckClip.Win*-${release_tag#v}-full.nupkg" -o \
+      -name "io.github.iajihga.TuckClip.Win*-${release_tag#v}-win-*-full.nupkg" -o \
       -name 'releases.win-*.json' \
     \) \
     -print0
