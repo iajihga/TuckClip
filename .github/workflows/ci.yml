@@ -40,6 +40,23 @@ jobs:
       - name: Run XCTest
         run: ./scripts/test.sh
 
+  macos-package-check:
+    name: macOS Release package and launch check
+    needs: macos-test
+    runs-on: macos-15
+    timeout-minutes: 30
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_16.4.app/Contents/Developer
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Build, verify, and launch the arm64 Release DMG
+        run: ./scripts/package-release.sh v0.0.1-ci arm64 "${RUNNER_TEMP}/TuckClip-macOS-arm64"
+
   windows-test:
     name: Windows restore, test, and build
     runs-on: windows-2025
