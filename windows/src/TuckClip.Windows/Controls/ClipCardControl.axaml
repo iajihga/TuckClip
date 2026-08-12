@@ -1,0 +1,162 @@
+<UserControl
+    x:Class="TuckClip.Windows.Controls.ClipCardControl"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:vm="using:TuckClip.Windows.ViewModels"
+    x:DataType="vm:ClipCardViewModel"
+    x:Name="CardRoot">
+  <Button
+      Padding="0"
+      Background="Transparent"
+      BorderThickness="0"
+      Click="OnActivateClick"
+      Focusable="False"
+      ToolTip.Tip="{Binding AccessibilitySummary}">
+    <Button.ContextMenu>
+      <ContextMenu>
+        <MenuItem Header="粘贴" Click="OnPasteMenuClick" />
+        <MenuItem
+            Header="以纯文本粘贴"
+            IsVisible="{Binding SupportsPlainTextPaste}"
+            Click="OnPlainTextMenuClick" />
+        <Separator />
+        <MenuItem Header="{Binding PinLabel}" Click="OnTogglePinMenuClick" />
+        <MenuItem Header="删除" Click="OnDeleteMenuClick" />
+      </ContextMenu>
+    </Button.ContextMenu>
+
+    <Border
+        Width="248"
+        Height="178"
+        Padding="15"
+        Background="{Binding CardBackground}"
+        BorderBrush="{Binding CardBorderBrush}"
+        BorderThickness="{Binding CardBorderThickness}"
+        CornerRadius="20">
+      <Grid RowDefinitions="Auto,*,Auto">
+        <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="8">
+          <Border
+              Grid.Column="0"
+              Padding="9,4"
+              Background="#16000000"
+              BorderBrush="{Binding KindAccentBrush}"
+              BorderThickness="1"
+              CornerRadius="12">
+            <StackPanel Orientation="Horizontal" Spacing="5">
+              <TextBlock
+                  FontSize="13"
+                  FontWeight="SemiBold"
+                  Foreground="{Binding KindAccentBrush}"
+                  Text="{Binding KindIcon}" />
+              <TextBlock
+                  FontSize="12"
+                  FontWeight="SemiBold"
+                  Foreground="{Binding KindAccentBrush}"
+                  Text="{Binding KindTitle}" />
+            </StackPanel>
+          </Border>
+
+          <TextBlock
+              Grid.Column="2"
+              VerticalAlignment="Center"
+              FontFamily="Consolas"
+              FontSize="10"
+              Foreground="#80FFFFFF"
+              IsVisible="{Binding HasShortcut}"
+              Text="{Binding ShortcutText}" />
+
+          <TextBlock
+              Grid.Column="3"
+              VerticalAlignment="Center"
+              FontSize="13"
+              Foreground="#FF31D1EA"
+              IsVisible="{Binding IsPinned}"
+              Text="◆"
+              ToolTip.Tip="已置顶" />
+        </Grid>
+
+        <Grid Grid.Row="1" Margin="0,10,0,9">
+          <StackPanel IsVisible="{Binding IsNotImage}" Spacing="5">
+            <TextBlock
+                MaxHeight="56"
+                FontSize="14"
+                FontWeight="Medium"
+                Foreground="#F2FFFFFF"
+                Text="{Binding DisplayTitle}"
+                TextTrimming="CharacterEllipsis"
+                TextWrapping="Wrap" />
+            <TextBlock
+                MaxHeight="34"
+                FontSize="11"
+                Foreground="#84FFFFFF"
+                IsVisible="{Binding HasDetail}"
+                Text="{Binding Detail}"
+                TextTrimming="CharacterEllipsis"
+                TextWrapping="Wrap" />
+          </StackPanel>
+
+          <Border
+              Background="#12000000"
+              CornerRadius="10"
+              IsVisible="{Binding IsImage}">
+            <Grid>
+              <Image
+                  x:Name="PreviewImage"
+                  Margin="4"
+                  IsVisible="False"
+                  Stretch="Uniform" />
+              <StackPanel
+                  x:Name="PreviewPlaceholder"
+                  HorizontalAlignment="Center"
+                  VerticalAlignment="Center"
+                  Spacing="4">
+                <TextBlock
+                    HorizontalAlignment="Center"
+                    FontSize="22"
+                    Foreground="#9BFFFFFF"
+                    Text="▧" />
+                <TextBlock
+                    x:Name="PreviewStatusText"
+                    FontSize="11"
+                    Foreground="#80FFFFFF"
+                    Text="图片预览不可用" />
+              </StackPanel>
+            </Grid>
+          </Border>
+        </Grid>
+
+        <Grid Grid.Row="2" RowDefinitions="1,Auto">
+          <Border Grid.Row="0" Background="#1AFFFFFF" />
+          <Grid Grid.Row="1" Margin="0,9,0,0" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="7">
+            <Border
+                Grid.Column="0"
+                Width="16"
+                Height="16"
+                Background="#16FFFFFF"
+                CornerRadius="4">
+              <TextBlock
+                  HorizontalAlignment="Center"
+                  VerticalAlignment="Center"
+                  FontSize="9"
+                  Foreground="#90FFFFFF"
+                  Text="●" />
+            </Border>
+            <TextBlock
+                Grid.Column="1"
+                VerticalAlignment="Center"
+                FontSize="11"
+                Foreground="#94FFFFFF"
+                Text="{Binding SourceName}"
+                TextTrimming="CharacterEllipsis" />
+            <TextBlock
+                Grid.Column="2"
+                VerticalAlignment="Center"
+                FontSize="11"
+                Foreground="#80FFFFFF"
+                Text="{Binding RelativeTime}" />
+          </Grid>
+        </Grid>
+      </Grid>
+    </Border>
+  </Button>
+</UserControl>

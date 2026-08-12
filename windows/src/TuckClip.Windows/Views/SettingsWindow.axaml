@@ -1,0 +1,324 @@
+<Window
+    x:Class="TuckClip.Windows.Views.SettingsWindow"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:vm="using:TuckClip.Windows.ViewModels"
+    x:DataType="vm:ClipboardSettingsViewModel"
+    Width="700"
+    Height="600"
+    MinWidth="620"
+    MinHeight="520"
+    Background="#FF0E142A"
+    CanResize="False"
+    ShowInTaskbar="False"
+    Title="TuckClip 设置"
+    WindowStartupLocation="CenterOwner">
+  <Window.Styles>
+    <Style Selector="Border.section">
+      <Setter Property="Padding" Value="16" />
+      <Setter Property="Background" Value="#0EFFFFFF" />
+      <Setter Property="BorderBrush" Value="#16FFFFFF" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="14" />
+    </Style>
+    <Style Selector="TextBlock.sectionTitle">
+      <Setter Property="Margin" Value="2,0,0,7" />
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Foreground" Value="#9AFFFFFF" />
+    </Style>
+    <Style Selector="TextBlock.rowTitle">
+      <Setter Property="FontSize" Value="14" />
+      <Setter Property="Foreground" Value="#EDFFFFFF" />
+    </Style>
+    <Style Selector="TextBlock.detail">
+      <Setter Property="FontSize" Value="11" />
+      <Setter Property="Foreground" Value="#83FFFFFF" />
+    </Style>
+    <Style Selector="Button.action">
+      <Setter Property="Padding" Value="12,7" />
+      <Setter Property="Background" Value="#17FFFFFF" />
+      <Setter Property="BorderBrush" Value="#1FFFFFFF" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="9" />
+      <Setter Property="Foreground" Value="#DFFFFFFF" />
+    </Style>
+    <Style Selector="Button.danger">
+      <Setter Property="Foreground" Value="#FFFF9C9C" />
+    </Style>
+  </Window.Styles>
+
+  <Grid RowDefinitions="Auto,*">
+    <Grid
+        Grid.Row="0"
+        Margin="22,18,22,14"
+        ColumnDefinitions="Auto,*,Auto"
+        ColumnSpacing="12">
+      <Border Width="38" Height="38" Background="#FF5F59F7" CornerRadius="11">
+        <TextBlock
+            HorizontalAlignment="Center"
+            VerticalAlignment="Center"
+            FontSize="20"
+            FontWeight="Bold"
+            Foreground="White"
+            Text="⧉" />
+      </Border>
+      <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+        <TextBlock FontSize="18" FontWeight="SemiBold" Foreground="White" Text="TuckClip 设置" />
+        <TextBlock Classes="detail" Text="剪贴板内容仅保存在这台电脑上" />
+      </StackPanel>
+      <Button
+          Grid.Column="2"
+          Classes="action"
+          Click="OnHideClick"
+          Content="完成" />
+    </Grid>
+
+    <Grid Grid.Row="1">
+      <TabControl Margin="20,0,20,20">
+        <TabItem Header="记录">
+          <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <StackPanel Margin="2,14,2,4" Spacing="13">
+              <TextBlock Classes="sectionTitle" Text="快捷键" />
+              <Border Classes="section">
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+                  <StackPanel Spacing="5">
+                    <TextBlock Classes="rowTitle" Text="唤起 TuckClip" />
+                    <TextBlock
+                        Classes="detail"
+                        Foreground="#FFFF9C9C"
+                        IsVisible="{Binding HasHotKeyError}"
+                        Text="{Binding HotKeyStatusText}"
+                        TextWrapping="Wrap" />
+                    <TextBlock
+                        Classes="detail"
+                        IsVisible="{Binding HasNoHotKeyError}"
+                        Text="{Binding HotKeyStatusText}"
+                        TextWrapping="Wrap" />
+                  </StackPanel>
+                  <StackPanel Grid.Column="1" HorizontalAlignment="Right" Spacing="7">
+                    <Button
+                        MinWidth="154"
+                        Classes="action"
+                        Command="{Binding BeginHotKeyRecordingCommand}"
+                        Content="{Binding HotKeyButtonText}" />
+                    <Button
+                        Classes="action"
+                        Command="{Binding RestoreDefaultHotKeyCommand}"
+                        Content="恢复默认"
+                        IsEnabled="{Binding CanRestoreDefaultHotKey}" />
+                  </StackPanel>
+                </Grid>
+              </Border>
+
+              <TextBlock Classes="sectionTitle" Text="记录行为" />
+              <Border Classes="section">
+                <StackPanel Spacing="16">
+                  <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+                    <StackPanel Spacing="3">
+                      <TextBlock Classes="rowTitle" Text="记录剪贴板历史" />
+                      <TextBlock Classes="detail" Text="关闭后不会读取新的剪贴板内容" />
+                    </StackPanel>
+                    <ToggleSwitch Grid.Column="1" IsChecked="{Binding RecordingEnabled, Mode=TwoWay}" />
+                  </Grid>
+                  <Border Height="1" Background="#12FFFFFF" />
+                  <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+                    <StackPanel Spacing="3">
+                      <TextBlock Classes="rowTitle" Text="选择后自动粘贴" />
+                      <TextBlock Classes="detail" Text="关闭时仅把内容恢复到系统剪贴板" />
+                    </StackPanel>
+                    <ToggleSwitch Grid.Column="1" IsChecked="{Binding AutomaticPasteEnabled, Mode=TwoWay}" />
+                  </Grid>
+                  <Border Height="1" Background="#12FFFFFF" />
+                  <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+                    <StackPanel Spacing="3">
+                      <TextBlock Classes="rowTitle" Text="捕获图片" />
+                      <TextBlock Classes="detail" Text="图片占用空间较多，可随时关闭" />
+                    </StackPanel>
+                    <ToggleSwitch Grid.Column="1" IsChecked="{Binding CapturesImages, Mode=TwoWay}" />
+                  </Grid>
+                </StackPanel>
+              </Border>
+
+              <TextBlock Classes="sectionTitle" Text="容量" />
+              <Border Classes="section">
+                <Grid RowDefinitions="Auto,1,Auto" ColumnDefinitions="*,Auto" RowSpacing="12">
+                  <StackPanel Grid.Row="0" Spacing="3">
+                    <TextBlock Classes="rowTitle" Text="保留期" />
+                    <TextBlock Classes="detail" Text="到期记录会自动清理，置顶项除外" />
+                  </StackPanel>
+                  <ComboBox
+                      Grid.Row="0"
+                      Grid.Column="1"
+                      Width="130"
+                      ItemsSource="{Binding RetentionOptions}"
+                      SelectedItem="{Binding RetentionDays, Mode=TwoWay}" />
+                  <Border Grid.Row="1" Grid.ColumnSpan="2" Background="#12FFFFFF" />
+                  <StackPanel Grid.Row="2" Spacing="3">
+                    <TextBlock Classes="rowTitle" Text="最大条数" />
+                    <TextBlock Classes="detail" Text="达到上限后优先清理最早的未置顶记录" />
+                  </StackPanel>
+                  <ComboBox
+                      Grid.Row="2"
+                      Grid.Column="1"
+                      Width="130"
+                      ItemsSource="{Binding MaximumItemOptions}"
+                      SelectedItem="{Binding MaximumItemCount, Mode=TwoWay}" />
+                </Grid>
+              </Border>
+            </StackPanel>
+          </ScrollViewer>
+        </TabItem>
+
+        <TabItem Header="隐私">
+          <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <StackPanel Margin="2,14,2,4" Spacing="13">
+              <TextBlock Classes="sectionTitle" Text="排除应用" />
+              <Border Classes="section">
+                <StackPanel Spacing="10">
+                  <TextBlock Classes="rowTitle" Text="不记录这些进程" />
+                  <TextBlock
+                      Classes="detail"
+                      Text="每行填写一个进程名，例如 KeePassXC.exe。密码管理器建议始终排除。"
+                      TextWrapping="Wrap" />
+                  <TextBox
+                      Height="190"
+                      Padding="10"
+                      AcceptsReturn="True"
+                      FontFamily="Consolas"
+                      FontSize="12"
+                      Text="{Binding ExcludedProcessNamesText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                      TextWrapping="NoWrap"
+                      PlaceholderText="KeePassXC.exe&#10;1Password.exe" />
+                  <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                    <TextBlock
+                        VerticalAlignment="Center"
+                        Classes="detail"
+                        Text="{Binding ExcludedProcessSaveStatus}" />
+                    <Button
+                        Grid.Column="1"
+                        Classes="action"
+                        Command="{Binding ApplyExcludedProcessNamesCommand}"
+                        Content="保存排除列表" />
+                  </Grid>
+                </StackPanel>
+              </Border>
+
+              <Border Classes="section">
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                  <TextBlock FontSize="17" Foreground="#FF31D1EA" Text="✓" />
+                  <TextBlock
+                      Classes="detail"
+                      VerticalAlignment="Center"
+                      Text="TuckClip 不包含账号、云同步、遥测或网络上传。" />
+                </StackPanel>
+              </Border>
+            </StackPanel>
+          </ScrollViewer>
+        </TabItem>
+
+        <TabItem Header="存储">
+          <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <StackPanel Margin="2,14,2,4" Spacing="13">
+              <TextBlock Classes="sectionTitle" Text="本地数据" />
+              <Border Classes="section">
+                <StackPanel Spacing="12">
+                  <Border
+                      Padding="10"
+                      Background="#24FF9C52"
+                      CornerRadius="9"
+                      IsVisible="{Binding HasStorageError}">
+                    <StackPanel Spacing="3">
+                      <TextBlock FontWeight="SemiBold" Foreground="#FFFFC18A" Text="存储状态异常" />
+                      <TextBlock Classes="detail" Text="{Binding StorageError}" TextWrapping="Wrap" />
+                    </StackPanel>
+                  </Border>
+                  <TextBlock Classes="rowTitle" Text="数据目录" />
+                  <TextBox
+                      IsReadOnly="True"
+                      FontFamily="Consolas"
+                      FontSize="11"
+                      Text="{Binding DataDirectory}"
+                      TextWrapping="Wrap" />
+                  <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                    <TextBlock
+                        Classes="detail"
+                        VerticalAlignment="Center"
+                        Text="历史数据库与图片只保存在本机。" />
+                    <Button
+                        Grid.Column="1"
+                        Classes="action"
+                        Command="{Binding RevealDataDirectoryCommand}"
+                        Content="在资源管理器中显示" />
+                  </Grid>
+                </StackPanel>
+              </Border>
+
+              <TextBlock Classes="sectionTitle" Text="清理" />
+              <Border Classes="section">
+                <StackPanel Spacing="14">
+                  <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                    <StackPanel Spacing="3">
+                      <TextBlock Classes="rowTitle" Text="清除未置顶历史" />
+                      <TextBlock Classes="detail" Text="保留你主动置顶的常用片段" />
+                    </StackPanel>
+                    <Button
+                        Grid.Column="1"
+                        Classes="action"
+                        Command="{Binding RequestClearUnpinnedCommand}"
+                        Content="清除…"
+                        IsEnabled="{Binding CanClearHistory}" />
+                  </Grid>
+                  <Border Height="1" Background="#12FFFFFF" />
+                  <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                    <StackPanel Spacing="3">
+                      <TextBlock Classes="rowTitle" Text="清除所有本地数据" />
+                      <TextBlock Classes="detail" Text="包括置顶项；此操作不可撤销" />
+                    </StackPanel>
+                    <Button
+                        Grid.Column="1"
+                        Classes="action danger"
+                        Command="{Binding RequestClearAllCommand}"
+                        Content="全部清除…"
+                        IsEnabled="{Binding CanClearHistory}" />
+                  </Grid>
+                </StackPanel>
+              </Border>
+            </StackPanel>
+          </ScrollViewer>
+        </TabItem>
+      </TabControl>
+
+      <Grid
+          Background="#B20B1026"
+          IsVisible="{Binding IsClearConfirmationVisible}">
+        <Border
+            Width="500"
+            Padding="22"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Center"
+            Background="#FF151D38"
+            BorderBrush="#30FFFFFF"
+            BorderThickness="1"
+            CornerRadius="16">
+          <StackPanel Spacing="13">
+            <TextBlock
+                FontSize="17"
+                FontWeight="SemiBold"
+                Foreground="White"
+                Text="{Binding ClearConfirmationTitle}" />
+            <TextBlock
+                FontSize="12"
+                Foreground="#A8FFFFFF"
+                Text="{Binding ClearConfirmationDetail}"
+                TextWrapping="Wrap" />
+            <StackPanel HorizontalAlignment="Right" Orientation="Horizontal" Spacing="9">
+              <Button Classes="action" Command="{Binding CancelClearCommand}" Content="取消" />
+              <Button Classes="action danger" Command="{Binding ConfirmClearCommand}" Content="确认清除" />
+            </StackPanel>
+          </StackPanel>
+        </Border>
+      </Grid>
+    </Grid>
+  </Grid>
+</Window>

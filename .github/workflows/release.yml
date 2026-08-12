@@ -1,0 +1,223 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+  DOTNET_NOLOGO: "1"
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: "1"
+
+jobs:
+  macos-test:
+    name: macOS XCTest
+    runs-on: macos-15
+    timeout-minutes: 20
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_16.4.app/Contents/Developer
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Run XCTest
+        run: ./scripts/test.sh
+
+  windows-test:
+    name: Windows restore, test, and build
+    runs-on: windows-2025
+    timeout-minutes: 25
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Set up .NET 10
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: windows/global.json
+          cache: true
+          cache-dependency-path: windows/**/packages.lock.json
+
+      - name: Restore locked dependencies
+        shell: pwsh
+        run: dotnet restore ./windows/TuckClip.Windows.slnx --locked-mode
+
+      - name: Test and build
+        shell: pwsh
+        run: ./windows/scripts/Test.ps1 -NoRestore
+
+  build-macos:
+    name: Build macOS ${{ matrix.architecture }} DMG
+    needs: macos-test
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_16.4.app/Contents/Developer
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - architecture: arm64
+            runner: macos-15
+          - architecture: x86_64
+            runner: macos-15-intel
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Build ad-hoc signed DMG
+        run: ./scripts/package-release.sh "${GITHUB_REF_NAME}" "${{ matrix.architecture }}"
+
+      - name: Upload packaged DMG
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: TuckClip-${{ github.ref_name }}-macOS-${{ matrix.architecture }}
+          path: dist/TuckClip-${{ github.ref_name }}-macOS-${{ matrix.architecture }}.dmg
+          if-no-files-found: error
+          overwrite: false
+          retention-days: 7
+
+  build-windows:
+    name: Build Windows ${{ matrix.runtime }} packages
+    needs: windows-test
+    runs-on: windows-2025
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runtime: win-x64
+            architecture: x64
+          - runtime: win-arm64
+            architecture: arm64
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Set up .NET 10
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: windows/global.json
+          cache: true
+          cache-dependency-path: windows/**/packages.lock.json
+
+      - name: Restore locked dependencies
+        shell: pwsh
+        run: dotnet restore ./windows/TuckClip.Windows.slnx --locked-mode
+
+      - name: Build portable ZIP and Inno Setup installer
+        shell: pwsh
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+          RUNTIME_ID: ${{ matrix.runtime }}
+        run: |
+          ./windows/scripts/Build-Installer.ps1 `
+            -Tag $env:RELEASE_TAG `
+            -Runtime $env:RUNTIME_ID `
+            -NoRestore
+
+      - name: Upload Windows packages
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: TuckClip-${{ github.ref_name }}-Windows-${{ matrix.runtime }}
+          path: |
+            dist/TuckClip-${{ github.ref_name }}-Windows-${{ matrix.architecture }}-portable.zip
+            dist/TuckClip-${{ github.ref_name }}-Windows-${{ matrix.architecture }}-Setup.exe
+          if-no-files-found: error
+          overwrite: false
+          retention-days: 7
+
+  publish:
+    name: Publish immutable GitHub Release
+    needs:
+      - build-macos
+      - build-windows
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: write
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Download all packaged assets
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        with:
+          pattern: TuckClip-${{ github.ref_name }}-*
+          path: dist
+          merge-multiple: true
+
+      - name: Generate combined SHA-256 file
+        run: ./scripts/generate-checksums.sh "${GITHUB_REF_NAME}" dist
+
+      - name: Verify complete release set
+        run: |
+          assets=(
+            "TuckClip-${GITHUB_REF_NAME}-macOS-arm64.dmg"
+            "TuckClip-${GITHUB_REF_NAME}-macOS-x86_64.dmg"
+            "TuckClip-${GITHUB_REF_NAME}-Windows-x64-portable.zip"
+            "TuckClip-${GITHUB_REF_NAME}-Windows-arm64-portable.zip"
+            "TuckClip-${GITHUB_REF_NAME}-Windows-x64-Setup.exe"
+            "TuckClip-${GITHUB_REF_NAME}-Windows-arm64-Setup.exe"
+          )
+          for asset in "${assets[@]}"; do
+            test -s "dist/${asset}"
+          done
+          test -s "dist/TuckClip-${GITHUB_REF_NAME}-SHA256SUMS.txt"
+          test "$(find dist -maxdepth 1 -type f -name "TuckClip-${GITHUB_REF_NAME}-*" | wc -l | tr -d ' ')" -eq 7
+          (cd dist && sha256sum --check "TuckClip-${GITHUB_REF_NAME}-SHA256SUMS.txt")
+
+      - name: Create GitHub Release without replacing assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          assets=(
+            "dist/TuckClip-${GITHUB_REF_NAME}-macOS-arm64.dmg"
+            "dist/TuckClip-${GITHUB_REF_NAME}-macOS-x86_64.dmg"
+            "dist/TuckClip-${GITHUB_REF_NAME}-Windows-x64-portable.zip"
+            "dist/TuckClip-${GITHUB_REF_NAME}-Windows-arm64-portable.zip"
+            "dist/TuckClip-${GITHUB_REF_NAME}-Windows-x64-Setup.exe"
+            "dist/TuckClip-${GITHUB_REF_NAME}-Windows-arm64-Setup.exe"
+            "dist/TuckClip-${GITHUB_REF_NAME}-SHA256SUMS.txt"
+          )
+
+          if gh release view "${GITHUB_REF_NAME}" >/dev/null 2>&1; then
+            echo "Release ${GITHUB_REF_NAME} already exists; refusing to replace immutable assets." >&2
+            exit 1
+          fi
+
+          release_flags=()
+          if [[ "${GITHUB_REF_NAME}" == *-* ]]; then
+            release_flags+=(--prerelease)
+          fi
+
+          notes="TuckClip 首个公开版本，支持 macOS 与 Windows。安装与使用说明请查看仓库 README；所有下载均可通过随附的 SHA-256 文件校验。"
+          gh release create "${GITHUB_REF_NAME}" "${assets[@]}" \
+            --verify-tag \
+            --generate-notes \
+            --notes "${notes}" \
+            --title "TuckClip ${GITHUB_REF_NAME}" \
+            "${release_flags[@]}"

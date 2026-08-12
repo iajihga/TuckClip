@@ -1,0 +1,121 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - "**"
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+  DOTNET_NOLOGO: "1"
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: "1"
+
+jobs:
+  macos-test:
+    name: macOS XCTest
+    runs-on: macos-15
+    timeout-minutes: 20
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_16.4.app/Contents/Developer
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Show Xcode version
+        run: |
+          xcodebuild -version
+          xcrun --sdk macosx --show-sdk-version
+
+      - name: Run XCTest
+        run: ./scripts/test.sh
+
+  windows-test:
+    name: Windows restore, test, and build
+    runs-on: windows-2025
+    timeout-minutes: 25
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Set up .NET 10
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: windows/global.json
+          cache: true
+          cache-dependency-path: windows/**/packages.lock.json
+
+      - name: Show .NET information
+        run: dotnet --info
+
+      - name: Restore locked dependencies
+        shell: pwsh
+        run: dotnet restore ./windows/TuckClip.Windows.slnx --locked-mode
+
+      - name: Test and build
+        shell: pwsh
+        run: ./windows/scripts/Test.ps1 -NoRestore
+
+      - name: Upload Windows test results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: TuckClip-Windows-TestResults
+          path: windows/artifacts/TestResults/*.trx
+          if-no-files-found: warn
+          overwrite: false
+          retention-days: 7
+
+  windows-publish-check:
+    name: Windows ${{ matrix.runtime }} publish and PE check
+    needs: windows-test
+    runs-on: windows-2025
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        runtime:
+          - win-x64
+          - win-arm64
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Set up .NET 10
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: windows/global.json
+          cache: true
+          cache-dependency-path: windows/**/packages.lock.json
+
+      - name: Restore locked dependencies
+        shell: pwsh
+        run: dotnet restore ./windows/TuckClip.Windows.slnx --locked-mode
+
+      - name: Publish self-contained portable package and validate PE
+        shell: pwsh
+        env:
+          RUNTIME_ID: ${{ matrix.runtime }}
+        run: |
+          $output = Join-Path $env:RUNNER_TEMP "TuckClip-$env:RUNTIME_ID"
+          ./windows/scripts/Publish-Portable.ps1 `
+            -Tag v0.0.0-ci `
+            -Runtime $env:RUNTIME_ID `
+            -OutputDirectory $output `
+            -NoRestore

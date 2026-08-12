@@ -1,0 +1,13 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/TuckClip.Core/TuckClip.Core.csproj" />
+    <Project Path="src/TuckClip.Platform.Windows/TuckClip.Platform.Windows.csproj" />
+    <Project Path="src/TuckClip.Windows/TuckClip.Windows.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/TuckClip.Core.Tests/TuckClip.Core.Tests.csproj" />
+    <Project Path="tests/TuckClip.Platform.Windows.Tests/TuckClip.Platform.Windows.Tests.csproj" />
+    <Project Path="tests/TuckClip.Windows.IntegrationTests/TuckClip.Windows.IntegrationTests.csproj" />
+    <Project Path="tests/TuckClip.Windows.Ui.Tests/TuckClip.Windows.Ui.Tests.csproj" />
+  </Folder>
+</Solution>
