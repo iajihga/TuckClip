@@ -5,12 +5,12 @@ final class MacUpdateControllerTests: XCTestCase {
     func testFeedURLsAreArchitectureSpecificAndStableOnly() {
         XCTAssertEqual(
             MacUpdateController.feedURLString(architecture: "arm64"),
-            "https://github.com/iajihga/TuckClip/releases/latest/download/"
+            "https://github.com/mzopedia/TuckClip/releases/latest/download/"
                 + "TuckClip-macOS-arm64-appcast.xml"
         )
         XCTAssertEqual(
             MacUpdateController.feedURLString(architecture: "x86_64"),
-            "https://github.com/iajihga/TuckClip/releases/latest/download/"
+            "https://github.com/mzopedia/TuckClip/releases/latest/download/"
                 + "TuckClip-macOS-x86_64-appcast.xml"
         )
         XCTAssertNil(MacUpdateController.feedURLString(architecture: "unknown"))

@@ -3,7 +3,7 @@ import Sparkle
 
 @MainActor
 final class MacUpdateController: NSObject, SPUUpdaterDelegate {
-    private nonisolated static let repositoryURL = "https://github.com/iajihga/TuckClip"
+    private nonisolated static let repositoryURL = "https://github.com/mzopedia/TuckClip"
 
     private lazy var controller = SPUStandardUpdaterController(
         startingUpdater: true,

@@ -23,7 +23,7 @@ internal interface IWindowsUpdateClient
 
 internal sealed class VelopackUpdateClient : IWindowsUpdateClient
 {
-    internal static string RepositoryUrl { get; } = "https://github.com/iajihga/TuckClip";
+    internal static string RepositoryUrl { get; } = "https://github.com/mzopedia/TuckClip";
 
     private readonly UpdateManager _manager;
 

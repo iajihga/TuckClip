@@ -3,6 +3,12 @@ import Combine
 import CoreGraphics
 import Foundation
 
+enum TuckClipSettingsTab: Hashable {
+    case recording
+    case privacy
+    case storage
+}
+
 @MainActor
 final class UISettingsStore: ObservableObject {
     private let appSettings: AppSettings
@@ -83,6 +89,7 @@ final class UISettingsStore: ObservableObject {
         }
     }
     @Published private(set) var isRecordingHotKey = false
+    @Published var selectedSettingsTab: TuckClipSettingsTab = .recording
     @Published var hotKeyErrorDescription: String?
     @Published var storageErrorDescription: String?
     @Published var isStorageReadOnly = false
@@ -322,6 +329,16 @@ final class UISettingsStore: ObservableObject {
             string: "x-apple.systempreferences:com.apple.settings.PrivacySecurity"
         ) else { return }
         NSWorkspace.shared.open(url)
+    }
+
+    func openAccessibilitySettings() {
+        let accessibilityURL = URL(
+            string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"
+        )
+        if let accessibilityURL, NSWorkspace.shared.open(accessibilityURL) {
+            return
+        }
+        openPrivacySettings()
     }
 
     private func scheduleExcludedBundleIdentifiersCommit() {

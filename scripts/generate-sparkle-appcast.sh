@@ -67,7 +67,7 @@ fi
   "${DMG_PATH}" "${ED_SIGNATURE}"
 FILE_LENGTH="$(stat -f '%z' "${DMG_PATH}")"
 PUB_DATE="$(LC_ALL=C date -u '+%a, %d %b %Y %H:%M:%S +0000')"
-DOWNLOAD_URL="https://github.com/iajihga/TuckClip/releases/download/${RELEASE_TAG}/${DMG_NAME}"
+DOWNLOAD_URL="https://github.com/mzopedia/TuckClip/releases/download/${RELEASE_TAG}/${DMG_NAME}"
 TEMP_APPCAST="$(mktemp "${OUTPUT_DIR}/.${APPCAST_NAME}.XXXXXX")"
 
 cleanup() {
@@ -80,7 +80,7 @@ trap cleanup EXIT INT TERM
   print -r -- '<rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">'
   print -r -- '  <channel>'
   print -r -- '    <title>TuckClip Updates</title>'
-  print -r -- '    <link>https://github.com/iajihga/TuckClip</link>'
+  print -r -- '    <link>https://github.com/mzopedia/TuckClip</link>'
   print -r -- '    <description>Stable TuckClip updates for macOS</description>'
   print -r -- '    <language>en</language>'
   print -r -- '    <item>'
