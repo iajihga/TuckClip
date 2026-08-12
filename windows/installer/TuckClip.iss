@@ -67,7 +67,7 @@ UninstallDisplayName=TuckClip
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
-Name: "chinesesimplified"; MessagesFile: "compiler:Languages\ChineseSimplified.isl"
+Name: "chinesesimplified"; MessagesFile: "third_party\InnoSetup\ChineseSimplified.isl"
 
 [Tasks]
 Name: "startup"; Description: "随 Windows 登录启动"; GroupDescription: "其他选项："; Flags: unchecked
@@ -77,6 +77,7 @@ Name: "desktopicon"; Description: "创建桌面快捷方式"; GroupDescription: 
 Source: "{#SourceDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "..\..\LICENSE"; DestDir: "{app}"; DestName: "LICENSE.txt"; Flags: ignoreversion
 Source: "..\..\README.md"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\..\README.en.md"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 Name: "{group}\TuckClip"; Filename: "{app}\TuckClip.exe"
